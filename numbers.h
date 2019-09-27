@@ -26,9 +26,12 @@ int genSquareTriplets(const int nMax, std::set<std::tuple<int,int,int>>& setTrip
 int genMirrorSquares(const int nMax, std::set<std::pair<int,int>>& setMirrorSq);
 
 //Returns sqrt
-float bsqrt(float n);
+float bsqrt(const float n, const float EPS=0.001, const int NITER=25);
 
 //Returns sqrt
-float msqrt(float n);
+float msqrt(const float n, const float EPS=0.001, const int NITER=25);
+
+//Returns kth root of given number, for sqrt:k=2, cuberoot:k=3, etc
+float kthRoot(const double n, const int k=2, const float EPS=0.001, const int NITER=100);
 
 #endif

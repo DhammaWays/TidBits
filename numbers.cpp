@@ -170,8 +170,8 @@ return setMirrorSq.size();
 #define MABS(x) \
 	((x) >= 0 ? (x) : (-(x)))
 
-//Returns sqrt
-float bsqrt(float n) {
+//Returns sqrt, default parameters EPS=0.001, NITER=25
+float bsqrt(const float n, const float EPS, const int NITER) {
     // Babylon method: iterate on x1 = 1/2 * (x0 + n/x0) to get desired accuracy
 	//
 	// Babylon method is just a special case of newton-raphson method to solve
@@ -187,8 +187,8 @@ float bsqrt(float n) {
 	//
     
     float x = n * 0.5; // our initial guess
-    float g = 0.0, EPS = 0.001;
-    int i = 1, NITER = 25;
+    float g = 0.0;
+    int i = 1;
     while( MABS(x - g) > EPS && ++i <= NITER ) { // x != g, keep looping until guesses start to converge
     	g = x; // save previous guess
         x = (x + n/x) * 0.5; // babylon iteration for next guess
@@ -211,10 +211,11 @@ bool isSqrInt(int n) {
     return false; 
 }
 
-float msqrt(float n) { // binary chop: bisection method
+// Bisection method:  default parameters EPS=0.001, NITER=25
+float msqrt(const float n, const float EPS, const int NITER) { 
+	// binary chop: bisection method
 	float m = n;
-    int NITER = 25;
-    float EPS = 0.001, mSqr = m * m, lo = 0, hi = n;
+    float mSqr = m * m, lo = 0, hi = n;
 
 	bool sqrNum = false, oddNum = false;
 	
@@ -244,6 +245,40 @@ float msqrt(float n) { // binary chop: bisection method
 	// m ~= sqrt(n)
     return m;
 }
+
+//Returns kth root of given number, for sqrt:k=2, cuberoot:k=3, etc
+//Default parmeters, k=2, EPS=0.001, NITER=100
+float kthRoot(const double n, const int k, const float EPS, const int NITER) {
+    // Generalized babylon method: Iterate on x1 = 1/k * ((k-1)*x0 + n/(x0^(k-1)) to get desired accuracy
+	//
+	// Generalized babylon method to fin kth root is just a special case of
+	// newton-raphson method to solve roots of f(x) = 0, in case of kth root,
+	// f(x) = x^k - n 
+	//
+	// In Newton Rapshon method, for a function f(x), we calulate the equation
+	// of line passing through initial point (x0, y0=f(x0)) and having a slope of
+	// m = f'(x0), y = m(x-x0) + y0, we find the root of this line by putting 
+	// y = 0 => x1 = x0  - f(x0)/f'(x0)
+	// Since for kth root f(x) = x^k - n => f'(x) = kx^(k-1), so our above newton equation
+	// becomes => x1 = x0 - (x0^k - n)/kx0^(k-1), which when further simplified leads to
+	// babylon iterative equation => x1 = 1/k * ((k-1)*x0 + n/x0^(k-1))
+	//
+    
+	// Initial guess is quite important for newton method to converge especially for
+	// higher kth roots, otherwise it may take large number of iterations.
+	// Easy initial guess: n/k
+	// Fast converging guess: 2^(log(n)/k)
+    double x1 = 2 << (int)ceil(ceil(log2(n))/k); // our initial guess
+    double x0 = 0.0;
+    int i = 1;
+    while( MABS(x1 - x0) > EPS && ++i <= NITER ) { // x != g, keep looping until guesses start to converge
+    	x0 = x1; // save previous guess
+        x1 = ((k-1) * x0 + n/pow(x0, k-1)) / k; // babylon iteration for next guess
+    }
+    
+    return x1;    	
+}
+
 
 
 

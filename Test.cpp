@@ -193,6 +193,12 @@ void TestNum() {
     	cout << "sqrt(" << numAry[i] << ") = " << bsqrt(numAry[i]) << ":" << msqrt(numAry[i]) << endl;    	
     }
 
+    double kAry[] = {64, 64, 81, 3125, 6*6*6*6*6*6, 7*7*7*7*7*7*7, 9.22744694e+15};
+	
+    cout << "\n kth Root:" << endl;
+    for( int i = 0; i < ARRAY_SIZE(kAry); i++ ) {
+    	cout << "kthRoot(" << kAry[i] << ", " << i+2 << ") = " << kthRoot(kAry[i], i+2) << endl;    	
+    }
 
     
 }
