@@ -199,7 +199,14 @@ void TestNum() {
     for( int i = 0; i < ARRAY_SIZE(kAry); i++ ) {
     	cout << "kthRoot(" << kAry[i] << ", " << i+2 << ") = " << kthRoot(kAry[i], i+2) << endl;    	
     }
-
+	
+	vector<float> myPoly[] = {{1, 0, -625}, {1, 0, 0, -4913}, {1, -2, 1}, {9, 27, -162}, 
+							  {2, 31, 137, 180}, { 1, 2, -5, 1}, {10, 0, 2, -1, 0, -3},
+							  {5, 3, -2, -1, -10}, {7, 0, 5, 0, -3, 0, 1, 7777}};
+	cout << "\n Roots of polynomial:" << endl;
+	for( int i = 0; i < ARRAY_SIZE(myPoly); i++ ) {
+		PRINT_ARRAY(myPoly[i]); cout << " : " << largestPolyRealRoot(myPoly[i]) << endl;
+		}
     
 }
 

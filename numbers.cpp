@@ -279,6 +279,94 @@ float kthRoot(const double n, const int k, const float EPS, const int NITER) {
     return x1;    	
 }
 
+// Divide by highest coeff if not already 1
+void normalizePoly(std::vector<float>& vecPoly) {
+	if( vecPoly[0] != 1 ) {
+		for(int i=1; i < vecPoly.size(); i++)
+			vecPoly[i] /= vecPoly[0];
+		vecPoly[0] = 1;
+	}	
+}
+
+// Calculate upper bound for all real roots of polynomial
+float upperboundPoly(const std::vector<float>& vecPoly) {
+	float uB1 = 0, uB2 = 0, coef = 1;
+	
+	// After dropping sign of coeffcients, our upper bound is 
+	// MIN( MAX(all coefficients)+1, MAX(SUM of all coefficeints, 1))
+	for(int i=1; i < vecPoly.size(); i++) {
+		coef = MABS(vecPoly[i]); 
+		
+		// Find maximum of all coefficients
+		if( uB1 < coef ) uB1 = coef;
+		
+		//Find sum of all coefficients
+		uB2 += coef;
+	}
+	
+	return MIN(uB1+1, MAX(uB2, 1));
+}
+
+// Return polynomial p(X) and p'(x) at given value x0
+void calcPolyAndDerivValue(const std::vector<float>& vecPoly, const double x0, double& valuePoly, double& derivPoly) {
+	// Use horner method to speedup calculations
+	// p(x) = a0 * x^n + a1 * x^n-1 + ... + an
+	// p'(x) = n*a0*x^n-1 + (n-1)*a1 * x^n-2 + ... + a(n-1)
+	//
+	// Horner method:
+	// p(x) = an + x * (an-1 + x * (an-2 + x * (an-3+ ... + x * (a1 + a0 * x)...)))
+	// bn = a0, bn-1 = a1 + bn * x, ..., b0 = an+ b1 * x
+	// p(x0) = b0
+	//
+	// For derivative, we have one less term and coefficients are now: n*a0, (n-1)*a1, ..., a1
+	
+	int n = vecPoly.size() - 1; // degree of polynomial
+	valuePoly = vecPoly[0];
+	derivPoly = n * vecPoly[0];
+	
+	if( n <= 1 ) // Constant polynomial, nothing to do, its root is its constant term!		
+		return;
+			
+	for( int i= 1, j= n-1; i <= n; i++, j--)	{
+		valuePoly = vecPoly[i] + valuePoly * x0;
+		if( j > 0 ) // We have one less term for derivative
+			derivPoly = j * vecPoly[i] + derivPoly * x0;
+	}
+	
+	return;
+}
+
+//Returns largest real root of given polynomial, coeff are provided in highest order first
+//For p(x) = a0 * x^n + a1 * x^n-1 + ... + an, pass coeff as [a0, a1, ..., an]
+float largestPolyRealRoot(const std::vector<float>& vecPolyCoef, const float EPS, const int NITER) {
+	// To find one root of given nth order polynomial p(x), we will use netwon-raphson method
+	// 		x1 = x0 - p(x0)/p'(x0), where p'(x) is derivative of p(x)
+	
+	std::vector<float> vecNormPoly = vecPolyCoef;
+	
+	// Ensure the highest coefficient is always 1
+	normalizePoly(vecNormPoly);
+	
+	// A good upperbound is important for newton raphson to converge
+	double x0=0, x1 = upperboundPoly(vecNormPoly);
+	double valuePoly=x1, derivPoly=x1;
+	
+	int i = 1;
+    while( valuePoly!= 0 && MABS(x1 - x0) > EPS && ++i <= NITER ) { // x1 != x0, keep looping until guesses start to converge
+    	x0 = x1; // save previous guess
+		
+		// next guess
+		calcPolyAndDerivValue(vecNormPoly, x0, valuePoly, derivPoly);
+		if( derivPoly != 0 )
+			x1 = x0 - valuePoly/derivPoly; 
+    }
+    
+    return x1;    	
+}
+
+
+
+
 
 
 
