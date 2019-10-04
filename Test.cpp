@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <cstdlib>
+#include <math.h>
 
 #include "timer.h"
 #include "fibonacci.h"
@@ -207,8 +208,23 @@ void TestNum() {
 	for( int i = 0; i < ARRAY_SIZE(myPoly); i++ ) {
 		PRINT_ARRAY(myPoly[i]); cout << " : " << largestPolyRealRoot(myPoly[i]) << endl;
 		}
-    
+		
+	cout << "\n Roots of function:" << endl;
+	auto F1 = [] (const double x) { return sin(x)*cos(x); };
+	auto F2 = [] (const double x) { return 3*x + sin(x) - exp(x); };
+	auto F3 = [] (const double x) { return exp(x) * cos(x) - x * sin(x); };
+	auto F4 = [] (const double x) { return x * exp(-x*x); };
+	auto F5 = [] (const double x) { return pow((x-0.5), 3); };
+	auto F6 = [] (const double x) { return x*x*x - 125;};
+	
+	cout << "\n sin(x)*cos(x) has a zero at " << rootFunction(F1, 1., 2.) << endl;
+	cout << "\n 3x + sin(x) - e^x has a zero at " << rootFunction(F2, 0.0, 0.5) << endl;
+	cout << "\n e^x * cos(x) - x * sin(x) has a zero at " << rootFunction(F3, 0., 3.) << endl;
+	cout << "\n x * e^(-x^2) has a zero at " << rootFunction(F4, -1., 1.) << endl;
+	cout << "\n (x - 0.5)^3 has a zero at " << rootFunction(F5, -1., 1.) << endl;
+	cout << "\n (x^3 - 125) has a zero at " << rootFunction(F6, 0., 10.) << endl;
 }
+
 
 void TestStr() {
     string s1 = "Dhamma Path";

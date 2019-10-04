@@ -11,6 +11,7 @@
 //Simple macros to return MAX, MIN value
 #define MAX(a,b) ((a) >= (b) ? (a) : (b))
 #define MIN(a,b) ((a) <= (b) ? (a) : (b))
+#define ABS(x) ((x) >= 0 ? (x) : -(x))
 
 //Returns max sum of max sum subsequence
 // (istart, iEnd) is max sub subsequence
@@ -40,4 +41,10 @@ float kthRoot(const double n, const int k=2, const float EPS=0.001, const int NI
 //For example p(x) = x^2 - 2x + 1, pass coeff as [1, -2, 1]
 //For kth Root of n, pass in p(x)= x^k - n, coeff as [1, 0...k-1 times, -n]
 float largestPolyRealRoot(const std::vector<float>& vecPolyCoef, const float EPS=0.001, const int NITER=100);
+
+//Returns a root of continuous function in given interval
+template <typename Func, typename Scalar>
+Scalar rootFunction(Func&& F, Scalar a, Scalar b, const Scalar EPS=0.001, const int NITER=100);
+
+#include "numbers.tpp"
 #endif
