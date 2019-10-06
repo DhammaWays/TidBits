@@ -33,12 +33,14 @@ Scalar rootFunction(Func&& F, Scalar a, Scalar b, const Scalar EPS, const int NI
 	Scalar fV = F(c);
 	for( int i=1; ABS(fV) > EPS && i <= NITER; i++ ) {
 		assert( a < c && c < b );
+		assert( SIGN(F(a)) != SIGN(F(b)) );
 		
 		// Keep shortening interval to ensure f(a) and f(b) lie on opposite side		
-		if( flipSign * fV > 0 ) 
+		if( flipSign * fV > 0 ) // SIGN(f(c)) == SIGN(f(b))
 			b = c; 
-		else 
+		else // SIGN(f(c)) == SIGN(f(a))
 			a = c;
+			
 		// Next guess: mid point	
 		c = (a+b) * 0.5;
 		fV = F(c);

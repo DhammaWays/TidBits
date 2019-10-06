@@ -364,6 +364,184 @@ float largestPolyRealRoot(const std::vector<float>& vecPolyCoef, const float EPS
     return x1;    	
 }
 
+// Return difference series: a2-a1
+void diffSeries(const std::vector<int>& vecSeries, std::vector<int>& dSeries) {
+	assert( vecSeries.size() > 1 );
+	
+	dSeries.clear();
+	for(int i=0; i < vecSeries.size()-1; i++) {
+		dSeries.push_back(vecSeries[i+1] - vecSeries[i]);
+	}
+}
+
+// Return difference 2 series: a2 - a1*n
+void diff2Series(const std::vector<int>& vecSeries, std::vector<int>& dSeries) {
+	assert( vecSeries.size() > 1 );
+	
+	dSeries.clear();
+	for(int i=0; i < vecSeries.size()-1; i++) {
+		dSeries.push_back(vecSeries[i+1] - vecSeries[i] * (i+1));
+	}
+}
+
+// Check if given series does not have all numbers same
+bool allNotSame(const std::vector<int>& vecSeries) {
+	for(int i=0; i < vecSeries.size()-1; i++) {
+		if( vecSeries[i] != vecSeries[i+1] ) // Found one elements which is not same
+			return true; // All are not same
+	}
+	
+	// All are same
+	return false;
+}
+
+bool allDivisible(const std::vector<int>& vecSeries, int a) {
+	for(const auto& v : vecSeries) {
+		if( (v/a)*a != v ) // perfectly divisible: v/a is full int
+			return false; // Found an element which is not fully divisible
+	}
+	// All are divisible
+	return true; 
+}
+
+// Check if s1 is getting repeated in s2, s1 length is at most equal to s2
+bool repeatSeries(const std::vector<int>& s1, const std::vector<int>& s2) {
+	assert( s1.size() > 1 );
+	for(int i=0; i < s1.size(); i++) {
+		if( s1[i] != s2[i] )
+			return false;
+	}
+	return true;
+}
+
+bool genStackDiffSeries(const std::vector<int>& vecSeries, std::vector<std::vector<int>>& stackSeries) {
+	// Keep stacking difference series until we find one with all same numbers
+	std::vector<int> dSeries, vSeries;
+	diffSeries(vecSeries, dSeries);	
+	while( dSeries.size() > 1 && allNotSame(dSeries) ) {
+		stackSeries.push_back(dSeries);
+		vSeries = dSeries;
+		diffSeries(vSeries, dSeries);
+	}
+	stackSeries.push_back(dSeries); // push the all same series
+	
+	
+	if( dSeries.size() > 1 ) // We have truly found a constant difference series
+		return true;
+	else { // No constant difference series: heuristic to see if we should proceed
+		// For higher order polynomial (size of our stack), we may not have enough terms to get to 
+		// constant difference series. So we are making use of some heuristics here.
+		if( stackSeries.size() > 2 ) {
+			if( repeatSeries(stackSeries[stackSeries.size()-2], stackSeries[stackSeries.size()-3]) )
+				return false;
+		}
+		return ABS(dSeries.back()) <= 10;
+		}
+}
+
+int reduceStackSeries(std::vector<std::vector<int>> stackSeries) {
+	// Keep poping difference series and perculating last element up the series
+	int diffNum = 0;
+	while( !stackSeries.empty() ) {
+		diffNum += (stackSeries.back()).back();
+		stackSeries.pop_back();
+	}
+	
+	return diffNum;	
+}
+
+#define DIV_ZERO(a, b) ((b) != 0 ? (a)/(b) : (a))
+#define IS_DIV_INT(a, b) ( ((a)/(b))*(b) == (a) )
+
+// Returns valid integer a/b
+bool validIntDiv(const int a, const int b, int& dV) {
+	if( b == 0 )
+		return false;
+		
+	dV = a/b;
+	if( (dV * b) != a )
+		return false;
+		
+	return true;
+}
+
+bool divSeries(const std::vector<int>& vecSeries, std::vector<int>& dSeries) {
+	assert(vecSeries.size() > 1);
+	
+	int dV;
+	dSeries.clear();
+	for(int i=0; i < vecSeries.size() - 1; i++) {
+		if( vecSeries[i+1] >= vecSeries[i] ) {
+			if( !validIntDiv(vecSeries[i+1], vecSeries[i], dV) )
+				return false;
+			}
+		else {
+			if( !validIntDiv(vecSeries[i], vecSeries[i+1], dV) )
+				return false;
+			}
+			
+		dSeries.push_back(dV);			
+	}
+	
+	return true;
+}
+
+// Returns the next number in given series
+int nextNumInSeries(const std::vector<int>& vecSeries) {
+	// There is no reliable algorithm which can find next number of ANY sequence since
+	// definition of a sequence is completely arbitary!
+	
+	// Still there are good classes of sequences for which we may be able to predict th enext number.
+	// One such class is where we can fit a polynomial to our sequence. This is called difference method.
+	// Degree of polynomial fitted is equal to how many iterations it took us to get to a constant difference
+	// series. For order "n" polynomial we at least need "n+1" terms to be given to us. If we do not have
+	// enoughterms, we may not be able to reach a constant term difference sequence.
+	
+	// Using difference method to find the next number in the given series
+	
+	std::vector<std::vector<int>> stackSeries;
+	std::vector<int> dSeries;
+	
+	assert(vecSeries.size() > 1);
+	
+	// First: See if series can be reduced to a difference series
+	if( genStackDiffSeries(vecSeries, stackSeries) ) {
+		return vecSeries.back() + reduceStackSeries(stackSeries);		
+	}
+	
+	// Second: See if it is a division series
+	stackSeries.clear();
+	if( divSeries(vecSeries, dSeries) && genStackDiffSeries(dSeries, stackSeries) ) {
+		if( vecSeries[0] > vecSeries[1] )
+			return vecSeries.back() / (dSeries.back() + reduceStackSeries(stackSeries));
+		else
+			return vecSeries.back() * (dSeries.back() + reduceStackSeries(stackSeries));			
+	}
+	
+	// Third: See if first difference series is a division series
+	std::vector<int> divisionSeries;
+	stackSeries.clear();
+	diffSeries(vecSeries, dSeries);	
+	if( divSeries(dSeries, divisionSeries) && genStackDiffSeries(divisionSeries, stackSeries) ) {
+		if( divisionSeries[0] > divisionSeries[1] )
+			return vecSeries.back() + dSeries.back() / (divisionSeries.back() + reduceStackSeries(stackSeries));
+		else
+			return vecSeries.back() + dSeries.back() * (divisionSeries.back() + reduceStackSeries(stackSeries));
+	}
+	
+	// Fourth: See if series is of kind prev_term*n + k
+	stackSeries.clear();
+	diff2Series(vecSeries, dSeries);
+	if( genStackDiffSeries(dSeries, stackSeries) ) {
+		return vecSeries.back() * vecSeries.size() + (dSeries.back() + reduceStackSeries(stackSeries));
+	}
+	
+	// Failure: Could not guess?
+	return -1;
+}
+
+
+
 
 
 

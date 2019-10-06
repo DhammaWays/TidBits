@@ -223,6 +223,17 @@ void TestNum() {
 	cout << "\n x * e^(-x^2) has a zero at " << rootFunction(F4, -1., 1.) << endl;
 	cout << "\n (x - 0.5)^3 has a zero at " << rootFunction(F5, -1., 1.) << endl;
 	cout << "\n (x^3 - 125) has a zero at " << rootFunction(F6, 0., 10.) << endl;
+	
+	cout << "\n Next number in series:" << endl;
+	std::vector<std::vector<int>> vecSeries = { {10, 20, 30, 40}, {2, 6, 12, 20},
+		{1, 8, 27, 64}, {0, 3, 8, 15}, {2, 9, 28, 65}, {1, 4, 9, 16},
+		{80, 63, 48, 35}, {1, 2, 6, 15}, {4, 18, 48, 100}, {30, 68, 130, 222},
+		{17, 19, 25, 37}, {11, 31, 69, 131}, {4, 16, 36, 64},
+		{720, 120, 24, 6}, {5, 9, 17, 33}, {3, 6, 12, 15}, {6, 10, 18, 34},
+		{3, 5, 14, 48} };
+	for(const auto& series: vecSeries) {
+		PRINT_ARRAY(series); cout << ": " << nextNumInSeries(series) << endl;
+	}
 }
 
 

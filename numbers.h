@@ -12,6 +12,7 @@
 #define MAX(a,b) ((a) >= (b) ? (a) : (b))
 #define MIN(a,b) ((a) <= (b) ? (a) : (b))
 #define ABS(x) ((x) >= 0 ? (x) : -(x))
+#define SIGN(x) ((x) >= 0 ? 1 : -1)
 
 //Returns max sum of max sum subsequence
 // (istart, iEnd) is max sub subsequence
@@ -45,6 +46,9 @@ float largestPolyRealRoot(const std::vector<float>& vecPolyCoef, const float EPS
 //Returns a root of continuous function in given interval
 template <typename Func, typename Scalar>
 Scalar rootFunction(Func&& F, Scalar a, Scalar b, const Scalar EPS=0.001, const int NITER=100);
+
+// Return the next number in given series
+int nextNumInSeries(const std::vector<int>& vecSeries);
 
 #include "numbers.tpp"
 #endif
