@@ -6,6 +6,17 @@
 
 #include <array>
 
+// Some common data types
+
+struct Point {
+	double x,y,z;
+};
+
+struct BBox {
+	Point ll; // lower left
+	Point ur; // upper right
+};
+
 class Vec {
 public:
   // Constructor creating constant vector, also default constructor
@@ -13,6 +24,7 @@ public:
   Vec(const std::array<double, 3>& v); // 3D
   Vec(const std::array<double, 2>& v); // 2D
   Vec(const Vec& dirV, double mag);
+  Vec(const Point& p0, const Point& p1);
   
   // Copy constructor, computational cost O(n)
   Vec(const Vec &mv);
@@ -98,6 +110,53 @@ public:
 
 public: // Leaving data member spublic so that x,y,z components can be accessed easily
   double x, y, z; // Data: Vector components
+};
+
+
+
+
+
+// Shape is base class acting as interface to real shapes
+class Shape {
+public:
+	// Constructors
+	Shape() {};
+	
+	// Destructors
+	virtual ~Shape(void) {};
+	
+	// Copy constructor
+  	Shape(const Shape &s) = default;
+	
+	// Interface
+	virtual bool isInside(const Point& p) const = 0;
+	virtual BBox boundBox(void) const = 0;
+	virtual bool doesIntersect(const Shape& s) const = 0;
+	virtual double area(void) const = 0;
+	virtual bool isConvex(void) const = 0;  
+	
+	  // Output function
+	virtual std::ostream& print(std::ostream&) const = 0;
+  	friend std::ostream &operator<<(std::ostream &, const Shape& s);
+};
+
+class Line: public Shape {
+public:
+	Line(const Point& p0=Point {0,0,0}, const Point& p1=Point {1,0,0});
+	
+	// Interface
+	virtual bool isInside(const Point& p) const;
+	virtual BBox boundBox(void) const;
+	virtual bool doesIntersect(const Shape& s) const;
+	virtual double area(void) const;
+	virtual bool isConvex(void) const; 
+	
+	// Output function
+	virtual std::ostream& print(std::ostream&) const;
+  
+		
+public: // Data 
+	Point first, second;
 };
 
 

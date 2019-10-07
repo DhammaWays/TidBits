@@ -282,6 +282,15 @@ void TestGeom() {
 	cout << "Projection of " << v8 << " on " << v3 << " : " << v8.project(v3) << endl;
 	cout << v8 << " is in anticlockwise direction of " << v3 << " : " << v3.isAntiClock(v8) << endl;
 	
+	Line l1({0, 0, 0}, {1, 0, 0}), l2({0, 1, 0}, {1, 1, 0}), l3({0, -1, 0}, {1, 1, 0}),
+	     l4({1,1,0}, {4,5,0}), l5({2,3,0}, {4,3,0}), l6({3,3,0}, {5,3,0}), l7({3,2,0}, {6,2,0});
+	
+	cout << l1 << " intersects " << l2 << " : " << l1.doesIntersect(l2) << endl;
+	cout << l1 << " intersects " << l3 << " : " << l1.doesIntersect(l3) << endl;
+	cout << l4 << " intersects " << l5 << " : " << l4.doesIntersect(l5) << endl;
+	cout << l5 << " intersects " << l6 << " : " << l5.doesIntersect(l6) << endl;
+	cout << l4 << " intersects " << l7 << " : " << l4.doesIntersect(l7) << endl;
+
 }
 
 
