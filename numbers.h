@@ -14,6 +14,11 @@
 #define ABS(x) ((x) >= 0 ? (x) : -(x))
 #define SIGN(x) ((x) >= 0 ? 1 : -1)
 
+inline bool isOdd(const int n) {
+	return (n&01 != 0);
+}
+
+
 //Returns max sum of max sum subsequence
 // (istart, iEnd) is max sub subsequence
 int max_sum_subarray(const int aiElem[], const int nSize, int& iStart, int& iEnd);

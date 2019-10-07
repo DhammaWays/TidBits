@@ -194,12 +194,9 @@ float bsqrt(const float n, const float EPS, const int NITER) {
         x = (x + n/x) * 0.5; // babylon iteration for next guess
     }
     
-    return x;    
-}
+    return x;
+}    
 
-bool isOdd(const int n) {
-	return (n&01 != 0);
-}
 
 bool isSqrInt(int n) { 
     for (int i = 1; i * i <= n; i++) {   

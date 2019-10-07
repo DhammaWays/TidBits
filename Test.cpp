@@ -290,7 +290,28 @@ void TestGeom() {
 	cout << l4 << " intersects " << l5 << " : " << l4.doesIntersect(l5) << endl;
 	cout << l5 << " intersects " << l6 << " : " << l5.doesIntersect(l6) << endl;
 	cout << l4 << " intersects " << l7 << " : " << l4.doesIntersect(l7) << endl;
+	cout << l5 << " intersects " << l4 << " : " << l5.doesIntersect(l4) << endl;
+	cout << l6 << " intersects " << l5 << " : " << l6.doesIntersect(l5) << endl;
+	cout << l7 << " intersects " << l4 << " : " << l7.doesIntersect(l4) << endl;
+	cout << l2 << " intersects " << l4 << " : " << l2.doesIntersect(l4) << endl;
+	
+	Polygon p1({{0, 0, 0}, {4, 0, 0}, {3, 3, 0}}), p2({{5, 2, 0}, {10, 2, 0}, {12, 5, 0}, {6.1, 3.1, 0}}),
+	        p3({{3, 2, 0}, {6, 3, 0}, {7, 7, 0}}), p4({{1,0,0}, {2,1,0}, {3,2,0}, {2,3,0}, {0,1,0}}),
+			p5({{1,0,0}, {3,1,0}, {4,1,0}, {1,3,0}});
+	Point p({-1, 1, 0}), q({2, 2, 0}), r({3, 2, 0}), s({-1,1,0}), t({1,1,0}), u({0,1,0}), v({2,1,0});
+	
+	cout << p << " is inside " << p1 << " : " << p1.isInside(p) << endl;
+	cout << q << " is inside " << p1 << " : " <<p1.isInside(q) << endl;
+	cout << r << " is inside " << p1 << " : " << p1.isInside(r) << endl;
+	cout << s << " is inside " << p4 << " : " << p4.isInside(s) << endl;
+	cout << t << " is inside " << p4 << " : " << p4.isInside(t) << endl;
+	cout << u << " is inside " << p5 << " : " << p5.isInside(u) << endl;
+	cout << v << " is inside " << p5 << " : " << p5.isInside(v) << endl;
 
+	cout << p1 << " intersects " << p2 << " : " << p1.doesIntersect(p2) << endl;
+	cout << p1 << " intersects " << p3 << " : " << p1.doesIntersect(p3) << endl;
+	cout << p3 << " intersects " << p2 << " : " << p3.doesIntersect(p2) << endl;
+			
 }
 
 

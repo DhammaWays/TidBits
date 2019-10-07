@@ -5,12 +5,20 @@
 // Lekhraj
 
 #include <array>
+#include <vector>
 
 // Some common data types
 
 struct Point {
 	double x,y,z;
+	
+	bool operator==(const Point& rhs) const {
+		return (x == rhs.x && y == rhs.y && z == rhs.z);
+	}
 };
+
+std::ostream& operator<<(std::ostream& o, const Point& p);
+
 
 struct BBox {
 	Point ll; // lower left
@@ -157,6 +165,25 @@ public:
 		
 public: // Data 
 	Point first, second;
+};
+
+class Polygon: public Shape {
+public:
+	Polygon(const std::vector<Point>& vertices);
+	
+	// Interface
+	virtual bool isInside(const Point& p) const;
+	virtual BBox boundBox(void) const;
+	virtual bool doesIntersect(const Shape& s) const;
+	virtual double area(void) const;
+	virtual bool isConvex(void) const; 
+	
+	// Output function
+	virtual std::ostream& print(std::ostream&) const;
+  
+		
+public: // Data 
+	std::vector<Point> mVertices;
 };
 
 
