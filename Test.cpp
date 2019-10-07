@@ -11,6 +11,7 @@
 #include "sort.h"
 #include "numbers.h"
 #include "lstrings.h"
+#include "geometry.h"
 
 using namespace measure;
 using namespace fibonacci;
@@ -259,6 +260,30 @@ void TestStr() {
     cout << s7 << " (longest palindrome)=> " << palindrome(s7) << endl;
 }
 
+void TestGeom() {
+    std::array<double, 3> arVec = {0, 0, 1};
+	double arV[] = {-1, 1};
+	Vec v1, v2(0,0), v3(1,0,0), v4(0,1), v5(1,1,1), v6(arVec),
+	    v7(reinterpret_cast<std::array<double, 2>&>(arV)),
+		v8(Vec(0,1,0), 2);
+	
+	cout << "\nTesting geometry...\n";
+	cout << v1 << "==" << v2 << " : " << (v1==v2) << endl;
+	cout << v3 << " magnitude is " << (v3.mag()) << endl;
+	cout << v3 << "." << v4 << " : " << (v3*v4) << endl;
+	cout << v3 << "x" << v4 << " : " << (v3.cross(v4)) << endl;
+	cout << v5 << " unit vector is " << (v5.unit()) << endl;
+	cout << v3 << "+" << v4 << " : " << (v3+v4) << endl;
+	cout << v3 << "-" << v4 << " : " << (v3-v4) << endl;
+	cout << v3 << "+ 2 * " << v4 << " : " << (v3 + 2 * v4) << endl;
+	cout << (v3+v4+v6) << "==" << v5 << " : " << ((v3+v4+v6) == v5) << endl;
+	cout << "Is angle between " << v5 << " and " << v3 << " acute? : " << v5.isAcute(v3) << endl;
+	cout << "Is angle between " << v7 << " and " << v3 << " acute? : " << v7.isAcute(v3) << endl;
+	cout << "Projection of " << v8 << " on " << v3 << " : " << v8.project(v3) << endl;
+	cout << v8 << " is in anticlockwise direction of " << v3 << " : " << v3.isAntiClock(v8) << endl;
+	
+}
+
 
 // Test Driver
 int main()
@@ -267,6 +292,6 @@ int main()
   TestSort();
   TestNum();
   TestStr();
-   
+  TestGeom(); 
   return 0;
 }
