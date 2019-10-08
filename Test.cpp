@@ -283,7 +283,8 @@ void TestGeom() {
 	cout << v8 << " is in anticlockwise direction of " << v3 << " : " << v3.isAntiClock(v8) << endl;
 	
 	Line l1({0, 0, 0}, {1, 0, 0}), l2({0, 1, 0}, {1, 1, 0}), l3({0, -1, 0}, {1, 1, 0}),
-	     l4({1,1,0}, {4,5,0}), l5({2,3,0}, {4,3,0}), l6({3,3,0}, {5,3,0}), l7({3,2,0}, {6,2,0});
+	     l4({1,1,0}, {4,5,0}), l5({2,3,0}, {4,3,0}), l6({3,3,0}, {5,3,0}), l7({3,2,0}, {6,2,0}),
+		 l8({0,0,0},{0,2,0}), l9({2.5,3,0}, {0,3,0});
 	
 	cout << l1 << " intersects " << l2 << " : " << l1.doesIntersect(l2) << endl;
 	cout << l1 << " intersects " << l3 << " : " << l1.doesIntersect(l3) << endl;
@@ -294,24 +295,60 @@ void TestGeom() {
 	cout << l6 << " intersects " << l5 << " : " << l6.doesIntersect(l5) << endl;
 	cout << l7 << " intersects " << l4 << " : " << l7.doesIntersect(l4) << endl;
 	cout << l2 << " intersects " << l4 << " : " << l2.doesIntersect(l4) << endl;
+	cout << l8 << " intersects " << l2 << " : " << l8.doesIntersect(l2) << endl;
+	cout << l4 << " intersects " << l9 << " : " << l4.doesIntersect(l9) << endl;
+	
+	Point x1({0,0}), x2({0.5,0}), x3({0.5,0.5}), x4({1,1}), x5({3,3}), x6({2,3}), x7({2.5,3});
+	cout << endl;
+	cout << x1 << " is within " << l3 << " : " << l3.isInside(x1) << endl;
+	cout << x2 << " is within " << l3 << " : " << l3.isInside(x2) << endl;
+	cout << x3 << " is within " << l3 << " : " << l3.isInside(x3) << endl;
+	cout << x4 << " is within " << l3 << " : " << l3.isInside(x4) << endl;
+	cout << x5 << " is within " << l5 << " : " << l5.isInside(x5) << endl;
+	cout << x6 << " is within " << l4 << " : " << l4.isInside(x6) << endl;
+	cout << x7 << " is within " << l4 << " : " << l4.isInside(x7) << endl;
+
+	
+	
 	
 	Polygon p1({{0, 0, 0}, {4, 0, 0}, {3, 3, 0}}), p2({{5, 2, 0}, {10, 2, 0}, {12, 5, 0}, {6.1, 3.1, 0}}),
 	        p3({{3, 2, 0}, {6, 3, 0}, {7, 7, 0}}), p4({{1,0,0}, {2,1,0}, {3,2,0}, {2,3,0}, {0,1,0}}),
-			p5({{1,0,0}, {3,1,0}, {4,1,0}, {1,3,0}});
+			p5({{1,0,0}, {3,1,0}, {4,1,0}, {1,3,0}}), p6({{1,0,0}, {3,0,0}, {2,1,0}, {3,2,0}, {0,3,0}}),
+			p7({{0,1,0}, {2,4,0}, {1,2,0}, {3,0,0}});
 	Point p({-1, 1, 0}), q({2, 2, 0}), r({3, 2, 0}), s({-1,1,0}), t({1,1,0}), u({0,1,0}), v({2,1,0});
 	
+	cout << endl;
 	cout << p << " is inside " << p1 << " : " << p1.isInside(p) << endl;
-	cout << q << " is inside " << p1 << " : " <<p1.isInside(q) << endl;
+	cout << q << " is inside " << p1 << " : " << p1.isInside(q) << endl;
 	cout << r << " is inside " << p1 << " : " << p1.isInside(r) << endl;
 	cout << s << " is inside " << p4 << " : " << p4.isInside(s) << endl;
 	cout << t << " is inside " << p4 << " : " << p4.isInside(t) << endl;
 	cout << u << " is inside " << p5 << " : " << p5.isInside(u) << endl;
 	cout << v << " is inside " << p5 << " : " << p5.isInside(v) << endl;
 
+	cout << endl;
 	cout << p1 << " intersects " << p2 << " : " << p1.doesIntersect(p2) << endl;
 	cout << p1 << " intersects " << p3 << " : " << p1.doesIntersect(p3) << endl;
 	cout << p3 << " intersects " << p2 << " : " << p3.doesIntersect(p2) << endl;
-			
+	
+	cout << endl;
+	cout << p1 << " is convex : " << p1.isConvex() << endl;
+	cout << p2 << " is convex : " << p2.isConvex() << endl;
+	cout << p3 << " is convex : " << p3.isConvex() << endl;
+	cout << p4 << " is convex : " << p4.isConvex() << endl;
+	cout << p5 << " is convex : " << p5.isConvex() << endl;	
+	cout << p6 << " is convex : " << p6.isConvex() << endl;	
+	cout << p7 << " is convex : " << p7.isConvex() << endl;	
+
+	cout << endl;
+	cout << p1 << " area : " << p1.area() << endl;
+	cout << p2 << " area : " << p2.area() << endl;
+	cout << p3 << " area : " << p3.area() << endl;
+	cout << p4 << " area : " << p4.area() << endl;
+	cout << p5 << " area : " << p5.area() << endl;	
+	cout << p6 << " area : " << p6.area() << endl;	
+	cout << p7 << " area : " << p7.area() << endl;	
+				
 }
 
 

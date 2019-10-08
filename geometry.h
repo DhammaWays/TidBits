@@ -31,8 +31,10 @@ public:
   Vec(const double x=0, const double y=0, const double z=0); // for 2D, pass first 2 values
   Vec(const std::array<double, 3>& v); // 3D
   Vec(const std::array<double, 2>& v); // 2D
-  Vec(const Vec& dirV, double mag);
-  Vec(const Point& p0, const Point& p1);
+  Vec(const Vec& dirV, double mag); // Direction, Magnitude
+  Vec(const Point& p0, const Point& p1); // Diff vector from p0 to p1
+  Vec(const Point& p); // Origin vector, from origin to p
+  
   
   // Copy constructor, computational cost O(n)
   Vec(const Vec &mv);

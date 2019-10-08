@@ -20,8 +20,9 @@ std::ostream& operator<<(std::ostream& o, const Point& p)
   o << "[" << p.x << ", " << p.y << ", " << p.z << "]";
   return (o);
 }
- 
 
+// Vector
+ 
 // Implementation of Vector class member functions
 Vec::Vec(const double _x, const double _y, const double _z) : x(_x), y(_y), z(_z) {}
 
@@ -29,7 +30,7 @@ Vec::Vec(const std::array<double, 3>& v) : x(v[0]), y(v[1]), z(v[2]) {}
 Vec::Vec(const std::array<double, 2>& v) : x(v[0]), y(v[1]), z(0) {}
 Vec::Vec(const Vec& dirV, double mag) : x(mag*dirV.x), y(mag*dirV.y), z(mag*dirV.z) {}
 Vec::Vec(const Point& p0, const Point& p1) : x(p1.x - p0.x), y(p1.y - p0.y), z(p1.z - p0.z) {}
-  
+Vec::Vec(const Point& p) : x(p.x), y(p.y), z(p.z) {}  
 
 // Copy constructor
 Vec::Vec(const Vec &mv) : x(mv.x), y(mv.y), z(mv.z) {}
@@ -198,7 +199,7 @@ Vec Vec::cross(const Vec &mv) const {
   return Vec(y * mv.z - z * mv.y, z * mv.x - x * mv.z, x * mv.y - y * mv.x);
 }
 
-// Does this vector make an acute angle (<=90 deg) with given vector?
+// Does this vector make an acute angle (< 90 deg) with given vector?
 bool Vec::isAcute(const Vec& v) const {
 	return this->dot(v) > 0;
 }
@@ -266,13 +267,11 @@ BBox Line::boundBox(void) const {
 	return bound;
 }
 
-
-
 // Line to Line intersection
 bool Line::doesIntersect(const Shape& s) const {
 	// Line to Line intersection Algo:
 	// 1) Do NOT intersect if their bound boxes do not overlap
-	// 2) Do intersect if they are collinear (lie along the same line) or they share an end point
+	// 2) Do intersect if they are collinear (lie along the same line) or their one of end point is on other line
 	//    Case when their ends do not overlap will get rejected with bound box check
 	// 3) Do NOT intersect if both ends of lines do not lie on same side w.r.t each other
 	// 4) Rest should intersect?
@@ -288,11 +287,17 @@ bool Line::doesIntersect(const Shape& s) const {
 	
 	if( !doBoundsOverlap(bound1, bound2) )
 		return false; // No intersection:  L1 and L2 are not within each other bounds
-		
+	
+	// Edge cases : All of them are intersections
+	// 1) Two lines collinear (overlap)
+	// 2) Two lines share one of end points
+	// 3) One of end point of one line lies within other line	
 	Vec v1f2f(first, pL2->first), v1f2s(first, pL2->second);
-	if( v1f2f.cross(v1f2s).magsqr() == 0 || haveCommonEndPoint(this, pL2) ) // Both the lines are collinear
+	if( v1f2f.cross(v1f2s).magsqr() == 0 || haveCommonEndPoint(this, pL2) || 
+	    this->isInside(pL2->first) || this->isInside(pL2->second) )
 		return true; // Intersection: They must be overlapping since boundbox do overlap
-		
+	
+	// Edge cases handled, we no wjust check if any of line lies completely on side of each other	
 	Vec v1f1s(first, second); 
 	if( v1f1s.isAntiClock(v1f2f) == v1f1s.isAntiClock(v1f2s) ) // L2 end points are on same side of L1
 		return false; // No intersection: L2 is completely on one side of L1 
@@ -307,7 +312,16 @@ bool Line::doesIntersect(const Shape& s) const {
 }
 
 bool Line::isInside(const Point& p) const {
-	return false;
+	// Check if given point is within line segment
+	if( !isPointInsideBoundBox(this->boundBox(), p) )
+		return false;
+	
+	// Check if point is along the line segment.
+	// If point vector from line's one end is collinear with line,
+	// point must be with line segment since point is already
+	// in bounds of line.
+	Vec vL(first, second), vP(first, p);
+	return (vL.cross(vP) == 0);	
 }
 
 double Line::area(void) const {
@@ -347,8 +361,6 @@ BBox Polygon::boundBox(void) const {
 	return bound;
 }
 
-
-
 // Polygon to Shape intersection
 bool Polygon::doesIntersect(const Shape& s) const {
 	// Polygon to Polygon intersection Algo:
@@ -363,23 +375,28 @@ bool Polygon::doesIntersect(const Shape& s) const {
 	if( !pS2 ) {
 		return false;
 		}
-
+				
+	// Bound check for quick rejection
 	BBox bound1 = this->boundBox();
 	BBox bound2= pS2->boundBox();
 	
 	if( !doBoundsOverlap(bound1, bound2) )
 		return false; // No intersection:  S1 and S2 are not within each other bounds
+
+	// Intersect polygon of N sides with M sides
+	const int N = mVertices.size();
+	const int M = pS2->mVertices.size();	
 		
-	if( mVertices.size() < 3 || pS2->mVertices.size() < 3 ) // Expecting at least a triangle
+	if( N < 3 || M < 3 ) // Expecting at least a triangle
 		return false;
 	
 	// Check if line segment of each polygon intersect with each other
 	// Need to be careful to pick th elast connecting last point to first point.
 	// (i+1) % N returns 0 for last point, allowing us to pick last line.
-	for(int i=0; i < mVertices.size(); i++)	{
-		Line l1(mVertices[i], mVertices[(i+1) % mVertices.size()]);
-		for(int j=0; j < pS2->mVertices.size(); j++) {
-			Line l2(pS2->mVertices[j], pS2->mVertices[(j+1) % pS2->mVertices.size()]);
+	for(int i=0; i < N; i++)	{
+		Line l1(mVertices[i], mVertices[(i+1) % N]);
+		for(int j=0; j < M; j++) {
+			Line l2(pS2->mVertices[j], pS2->mVertices[(j+1) % M]);
 			if( l1.doesIntersect(l2) )
 				return true;
 		}	
@@ -389,6 +406,7 @@ bool Polygon::doesIntersect(const Shape& s) const {
 	return false;
 }
 
+// Edge case: when ray hits either a vertex or collinear with an entire edge
 // For an intersecting edge whose at least one vertex is on th horizontal ray (i.e. verteex edge),
 // check if other vetex is below the ray. For crossing algorithm we will only count
 // edges which are below the ray.
@@ -408,14 +426,20 @@ bool Polygon::isInside(const Point& p) const {
 	if( !isPointInsideBoundBox(bound, p) )
 		return false;
 		
+	// Inside polygon (N sides) test using crossing method 
+	const int N = mVertices.size();
+	
+	if( N < 3 ) // expecting at least a triangle
+		return false;
+			
 	// Cast a ray from point along Y-axis and count number of intersections
 	// Number of intersections ODD => point is inside
 	
 	Line ray(p, Point({bound.ur.x+2, p.y, p.z}));
 	int nIntersections = 0;
 	
-	for(int i=0; i < mVertices.size(); i++) {
-		Line edge(mVertices[i], mVertices[(i+1) % mVertices.size()]);
+	for(int i=0; i < N; i++) {
+		Line edge(mVertices[i], mVertices[(i+1) % N]);
 		if( ray.doesIntersect(edge) && doesVertexEdgeLiesBelowRay(edge, ray) )
 			nIntersections++;
 	}
@@ -424,10 +448,84 @@ bool Polygon::isInside(const Point& p) const {
 }
 
 double Polygon::area(void) const {
-	return 0;
+	// Area of a general 3D planar polygon having normal unit vector n'
+	// Signed Area = 1/2 * (Normal . (SUM of cross product of its vertices))
+	//
+	// Area = 1/2 * (n'.SUM(Vi * Vi+1)), where i=0, n-1, and Vi is "i"th vertex as vector
+	// Need to be careful for last vertex as its next vertex needs to be 0th vertex. We
+	// can use "i%N" to take care of this.
+	//
+	// Positive sign of area means, polygon vertices are ordered anticlockwise.
+	// Actual area is absolute value of this signed area.
+	//
+	// For normal 2D polygon, we can use faster computation:
+	// Area = 1/2 * SUM( xi * (yi+1 - yi-1)), where i=1, n, and xi and yi belog to Vi vertex
+	// To avoid using "i%N" to take care of last vertex, we can either temporarily insert
+	// vertex v0 at the end or just do the last vetex computation outside the loop.
+	
+	double area = 0;
+	const int N = mVertices.size();
+	
+	if( N < 3 ) // Expecting at least a triangle
+		return 0;
+	
+	// Find sum of cross product of polygon vertices
+	Vec v(0, 0, 0), normal(0, 0, 1);
+	for(int i=0; i < N; i++) {
+		Vec v0(mVertices[i]), v1(mVertices[(i+1) % N]);
+		v += v0.cross(v1);			
+	}
+	
+	// Calculate unit normal vector to the plane of planar polygon
+	// We could have easily computed normal by taking cross product 
+	// of first two edges, but these could be collinear!
+	for(int i=0; i < N; i++) {
+		Vec e0(mVertices[i], mVertices[(i+1) % N]), e1(mVertices[(i+1) % N], mVertices[(i+2) % N]);
+		Vec n(e0.cross(e1));
+		
+		// We have the normal as soon as we find two consecutive edges which are not collinear
+		if( n.magsqr() != 0 ) {
+			normal = n.unit();
+			break;
+		}
+	}
+	
+	// Area = 1/2 * Normal . SUM(cross product of its vertices)
+	area = 0.5 * (normal.dot(v));
+	
+	// Return absolute value
+	// We could have returned signed area, which can be used to find orientation of polygon
+	// positive sign means polygon vertices are ordered anticlockwise.	
+	
+	return ABS(area);
 }
 	
 bool Polygon::isConvex(void) const {
+	// Assuming given polygon is not self-intersecting, we go round the polygon edges
+	// seeing if winding (turn) is consistent as we move from one edge to another edge. If we
+	// that any of these turns is not consistent with others, we have a concavity in the
+	// polygon, ther epolygonis concave. If we find all turns are consitent with each other
+	// our polygon is convex.
+	const int N = mVertices.size();
+	
+	// Triangles are always convex!
+	if( N < 4 ) {
+		return true;
+	}
+		
+	// Check turns at each corner of polygon
+	// Need to be careful to pick the last edge and last turn. 
+	// (i+1) % N returns 0 for last point, allowing us to pick last edge and first edge
+	// for last turn.
+	bool turnAntiClock = Vec(mVertices[0], mVertices[1]).isAntiClock(Vec(mVertices[1], mVertices[2]));
+	for(int i=1; i < N; i++)	{
+		Vec e1(mVertices[i], mVertices[(i+1) % N]);
+		Vec e2(mVertices[(i+1) % N], mVertices[(i+2) % N]);		
+		if( e1.isAntiClock(e2) != turnAntiClock ) // Check if this turn is same as other turns
+			return false;	// Found first turn which is not consistent, polygon is concave
+	}
+	
+	// All turns are consistent (go in same direction), our polygon is convex
 	return true;
 } 
 
