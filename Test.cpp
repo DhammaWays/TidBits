@@ -307,14 +307,12 @@ void TestGeom() {
 	cout << x5 << " is within " << l5 << " : " << l5.isInside(x5) << endl;
 	cout << x6 << " is within " << l4 << " : " << l4.isInside(x6) << endl;
 	cout << x7 << " is within " << l4 << " : " << l4.isInside(x7) << endl;
-
-	
-	
 	
 	Polygon p1({{0, 0, 0}, {4, 0, 0}, {3, 3, 0}}), p2({{5, 2, 0}, {10, 2, 0}, {12, 5, 0}, {6.1, 3.1, 0}}),
 	        p3({{3, 2, 0}, {6, 3, 0}, {7, 7, 0}}), p4({{1,0,0}, {2,1,0}, {3,2,0}, {2,3,0}, {0,1,0}}),
 			p5({{1,0,0}, {3,1,0}, {4,1,0}, {1,3,0}}), p6({{1,0,0}, {3,0,0}, {2,1,0}, {3,2,0}, {0,3,0}}),
-			p7({{0,1,0}, {2,4,0}, {1,2,0}, {3,0,0}});
+			p7({{0,1,0}, {2,4,0}, {1,2,0}, {3,0,0}}), p8({{-1, -1,0}, {5,0,0}, {5, 4, 0}, {0, 4,0}}),
+			p9({{1,-1,0}, {5,2,0}, {0,2,0}});
 	Point p({-1, 1, 0}), q({2, 2, 0}), r({3, 2, 0}), s({-1,1,0}), t({1,1,0}), u({0,1,0}), v({2,1,0});
 	
 	cout << endl;
@@ -330,7 +328,16 @@ void TestGeom() {
 	cout << p1 << " intersects " << p2 << " : " << p1.doesIntersect(p2) << endl;
 	cout << p1 << " intersects " << p3 << " : " << p1.doesIntersect(p3) << endl;
 	cout << p3 << " intersects " << p2 << " : " << p3.doesIntersect(p2) << endl;
+	cout << p1 << " overlaps " << p8 << " : " << p1.doesIntersect(p8) << endl;
+	cout << p1 << " intersects " << p9 << " : " << p1.doesIntersect(p9) << endl;
+
 	
+	Line l10({-1,2,0}, {1,2,0}), l11({-1,2,0}, {2,2,0}), l12({-1,2,0}, {5,2,0});
+	cout << endl;
+	cout << l10 << " intersects " << p1 << " : " << l10.doesIntersect(p1) << endl;
+	cout << l11 << " intersects " << p4 << " : " << l11.doesIntersect(p4) << endl;
+	cout << l12 << " intersects " << p4 << " : " << l12.doesIntersect(p4) << endl;
+		
 	cout << endl;
 	cout << p1 << " is convex : " << p1.isConvex() << endl;
 	cout << p2 << " is convex : " << p2.isConvex() << endl;

@@ -246,6 +246,36 @@ bool isPointInsideBoundBox(const BBox& b, const Point& p) {
 	          p.x > b.ur.x || p.y > b.ur.y || p.z > b.ur.z );
 }
 
+// Does an horizontal ray in +X axis direction intersect given line
+// This test is much faster then general line to line intersection
+bool doesRayIntersectLine(const Line& ray, const Line line) {
+	BBox bound = line.boundBox();
+	
+	// For +X axis horizontal ray to interscet a line, the line must
+	// lie to left of line and ray vertical position must be 
+	// within vertical bounds of the line.
+	if( bound.ll.y <= ray.first.y && ray.first.y <= bound.ur.y ) {
+		if( ray.first.x <= bound.ll.x ) // intersection: ray starting point is completely left of line bounds
+			return true;
+		else if ( ray.first.x > bound.ur.x ) // no interscetion: ray starting point is completely right of line bounds
+			return false;
+		else { // Need to check if ray starting point lies on left of line
+			Line increasingYline(line);			
+			if( line.first.y > line.second.y ) { // Need to swap end points to make our line in increasing Y order
+				increasingYline.first = line.second;
+				increasingYline.second = line.first;
+			}
+			
+			Vec lineV(increasingYline.first, increasingYline.second);
+			Vec rayV(increasingYline.first, ray.first);
+			return lineV.isAntiClock(rayV);			
+		}
+	}
+	else
+		return false;
+	
+}
+
 // Handy print
 std::ostream &operator<<(std::ostream &o, const Shape &s) {
   return (s.print(o));
@@ -257,12 +287,45 @@ Line::Line(const Point& p0, const Point& p1) : first(p0), second(p1) {}
 
 BBox Line::boundBox(void) const {
 	BBox bound;
+	
+	/*
 	bound.ll.x = MIN(first.x, second.x);
 	bound.ll.y = MIN(first.y, second.y);
 	bound.ll.z = MIN(first.z, second.z);
 	bound.ur.x = MAX(first.x, second.x);
 	bound.ur.y = MAX(first.y, second.y);
 	bound.ur.z = MAX(first.z, second.z);
+	*/
+		
+	// MINMAX along x-axis
+	if( first.x <= second. x ) {
+		bound.ll.x = first.x;
+		bound.ur.x = second.x;
+	}
+	else {
+		bound.ll.x = second.x;
+		bound.ur.x = first.x;
+	}
+	
+	// MINMAX along y-axis
+	if( first.y <= second.y ) {
+		bound.ll.y = first.y;
+		bound.ur.y = second.y;
+	}
+	else {
+		bound.ll.y = second.y;
+		bound.ur.y = first.y;
+	}
+	
+	// MINMAX along z-axis
+	if( first.z <= second.z ) {
+		bound.ll.z = first.z;
+		bound.ur.z = second.z;
+	}
+	else {
+		bound.ll.z = second.z;
+		bound.ur.z = first.z;
+	}		
 	
 	return bound;
 }
@@ -276,18 +339,46 @@ bool Line::doesIntersect(const Shape& s) const {
 	// 3) Do NOT intersect if both ends of lines do not lie on same side w.r.t each other
 	// 4) Rest should intersect?
 	
-	const Line* const pL2 = dynamic_cast<const Line* const>(&s);
+	BBox bound1 = this->boundBox();
+	BBox bound2= s.boundBox();
+	
+	if( !doBoundsOverlap(bound1, bound2) )
+		return false; // No intersection:  S1 and S2 are not within each other bounds
+	
+	// Need to branch based on what type of shape is coming in.
+	
+	// Not using dynamic_cats a sit is usually much slower. typeid is faster.	
+	//const Line* const pL2 = dynamic_cast<const Line* const>(&s);
+	if( typeid(s) == typeid(Polygon) ) { // Line to Polygon intersection
+		const Polygon* const pP = static_cast<const Polygon* const>(&s);
+		assert(pP); 
+		
+		// Check if any of the line segment point is inside the polygon.
+		if( pP->isInside(first) || pP->isInside(second) ) {
+			return true;
+		}
+		
+		// Do proper intersection check
+		for(int i=0; i < pP->mVertices.size(); i++) {
+			Line l1(pP->mVertices[i], pP->mVertices[(i+1) % pP->mVertices.size()]);
+			if( this->doesIntersect(l1) )
+				return true;
+		}
+		
+		// Checked al llines of polygon, no intersections found!
+		return false;		
+	}
+	else if ( typeid(s) != typeid(Line) ) {
+		return false;
+	}
+	
+	// Line to Line intersection
+	const Line* const pL2 = static_cast<const Line* const>(&s);
 	assert( pL2 );
 	if( !pL2 ) {
 		return false;
 		}
-
-	BBox bound1 = this->boundBox();
-	BBox bound2= pL2->boundBox();
-	
-	if( !doBoundsOverlap(bound1, bound2) )
-		return false; // No intersection:  L1 and L2 are not within each other bounds
-	
+		
 	// Edge cases : All of them are intersections
 	// 1) Two lines collinear (overlap)
 	// 2) Two lines share one of end points
@@ -361,6 +452,45 @@ BBox Polygon::boundBox(void) const {
 	return bound;
 }
 
+// Check if given two polygons intersect
+// It wil lonly return true if two of them actually intersect (i.e. at least one line intersects)
+// Overlap: It will return false in case one polygon is contained in other!
+
+bool doPolygonsIntersect(const Polygon& poly1, const Polygon& poly2) {
+	// Check if line segment of each polygon intersect with each other
+	// Need to be careful to pick th elast connecting last point to first point.
+	// (i+1) % N returns 0 for last point, allowing us to pick last line.
+	
+	const int N = poly1.mVertices.size();
+	const int M = poly2.mVertices.size();	
+	for(int i=0; i < N; i++)	{
+		Line l1(poly1.mVertices[i], poly1.mVertices[(i+1) % N]);
+		for(int j=0; j < M; j++) {
+			Line l2(poly2.mVertices[j], poly2.mVertices[(j+1) % M]);
+			if( l1.doesIntersect(l2) )
+				return true;
+		}	
+	}
+
+	// If we have reached so far, polygons are not intersecting
+	// We ignore the case when one polygon is completely inside other
+	return false;
+	
+} 
+
+// Checks if any vertex of first polygon lies within second polygon
+bool doesPoly1VertexLieInPoly2(const Polygon& poly1, const Polygon& poly2) {
+	// Check if any point of first polygon lies inside second one
+	
+	for(int i=0; i < poly1.mVertices.size(); i++)	{
+		if( poly2.isInside(poly1.mVertices[i]) ) 
+			return true;
+	}
+
+	// If we have reached so far, no vertex of first polygon lies within second one!
+	return false;	
+} 
+
 // Polygon to Shape intersection
 bool Polygon::doesIntersect(const Shape& s) const {
 	// Polygon to Polygon intersection Algo:
@@ -370,7 +500,22 @@ bool Polygon::doesIntersect(const Shape& s) const {
 	// 3) If we have not found any intersection amongtheir edges, these shapes do not intersect.
 	
 	
-	const Polygon* const pS2 = dynamic_cast<const Polygon* const>(&s);
+	// Need to branch based on what kind of shape is coming in
+	
+	// Using typeid instead of dynamic cast as it is significantly faster.
+	//const Polygon* const pS2 = dynamic_cast<const Polygon* const>(&s);	
+	if( typeid(s) == typeid(Line) ) { // Polygon to line intersection
+		const Line* const pL = static_cast<const Line* const>(&s);
+		assert(pL);
+	
+		return pL->doesIntersect(*this);
+	}
+	else if( typeid(s) != typeid(Polygon) ) {
+		return false;
+	}
+	
+	// Polygon to Polygon intersection
+	const Polygon* const pS2 = static_cast<const Polygon* const>(&s);
 	assert( pS2 );
 	if( !pS2 ) {
 		return false;
@@ -383,27 +528,18 @@ bool Polygon::doesIntersect(const Shape& s) const {
 	if( !doBoundsOverlap(bound1, bound2) )
 		return false; // No intersection:  S1 and S2 are not within each other bounds
 
-	// Intersect polygon of N sides with M sides
-	const int N = mVertices.size();
-	const int M = pS2->mVertices.size();	
+	// Check for intersections including complete overlap
 		
-	if( N < 3 || M < 3 ) // Expecting at least a triangle
+	if( mVertices.size() < 3 || pS2->mVertices.size() < 3 ) // Expecting at least a triangle
 		return false;
-	
-	// Check if line segment of each polygon intersect with each other
-	// Need to be careful to pick th elast connecting last point to first point.
-	// (i+1) % N returns 0 for last point, allowing us to pick last line.
-	for(int i=0; i < N; i++)	{
-		Line l1(mVertices[i], mVertices[(i+1) % N]);
-		for(int j=0; j < M; j++) {
-			Line l2(pS2->mVertices[j], pS2->mVertices[(j+1) % M]);
-			if( l1.doesIntersect(l2) )
-				return true;
-		}	
-	}
-
-	// If we have reached so far, polygons are not intersecting
-	return false;
+		
+	// We check for overlap, trying to see if one polygon vertex lies in another one
+	// In case first one does not work out, we try other way around.
+	if( doesPoly1VertexLieInPoly2(*this, *pS2) || doesPoly1VertexLieInPoly2(*pS2, *this) )
+		return true;
+		
+	// Let us see if any line of one polygon intersects another one
+	return doPolygonsIntersect(*this, *pS2);	
 }
 
 // Edge case: when ray hits either a vertex or collinear with an entire edge
@@ -432,7 +568,7 @@ bool Polygon::isInside(const Point& p) const {
 	if( N < 3 ) // expecting at least a triangle
 		return false;
 			
-	// Cast a ray from point along Y-axis and count number of intersections
+	// Cast an horizontal ray in +X direction from point and count number of intersections
 	// Number of intersections ODD => point is inside
 	
 	Line ray(p, Point({bound.ur.x+2, p.y, p.z}));
@@ -440,7 +576,8 @@ bool Polygon::isInside(const Point& p) const {
 	
 	for(int i=0; i < N; i++) {
 		Line edge(mVertices[i], mVertices[(i+1) % N]);
-		if( ray.doesIntersect(edge) && doesVertexEdgeLiesBelowRay(edge, ray) )
+		// We can use fast ray to line intersection instead of ray.doesIntersect(edge)
+		if( doesRayIntersectLine(ray, edge) && doesVertexEdgeLiesBelowRay(edge, ray) )
 			nIntersections++;
 	}
 	
