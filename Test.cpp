@@ -260,6 +260,13 @@ void TestStr() {
     cout << s7 << " (longest palindrome)=> " << palindrome(s7) << endl;
 }
 
+#define PRINT_TRI(vecTri) \
+	for( auto& tri : (vecTri) ) { \
+		cout << "[" << std::get<0>(tri) << ", " << std::get<1>(tri) << ", " << std::get<2>(tri) << "], "; \
+	} \
+	cout << endl;
+
+
 void TestGeom() {
     std::array<double, 3> arVec = {0, 0, 1};
 	double arV[] = {-1, 1};
@@ -312,7 +319,11 @@ void TestGeom() {
 	        p3({{3, 2, 0}, {6, 3, 0}, {7, 7, 0}}), p4({{1,0,0}, {2,1,0}, {3,2,0}, {2,3,0}, {0,1,0}}),
 			p5({{1,0,0}, {3,1,0}, {4,1,0}, {1,3,0}}), p6({{1,0,0}, {3,0,0}, {2,1,0}, {3,2,0}, {0,3,0}}),
 			p7({{0,1,0}, {2,4,0}, {1,2,0}, {3,0,0}}), p8({{-1, -1,0}, {5,0,0}, {5, 4, 0}, {0, 4,0}}),
-			p9({{1,-1,0}, {5,2,0}, {0,2,0}});
+			p9({{1,-1,0}, {5,2,0}, {0,2,0}}), 
+			p10({{-2,-1,0}, {1,1,0}, {2,-2,0}, {5,2,0}, {-1,2,0}, {3,4,0}, {-2,4,0}}),
+			p11({{1,1,0}, {2,0,0}, {3,1,0}, {5,2,0}, {3,3,0}, {2,4,0}, {1,3,0}, {-1,2,0}}),
+			p12({{1,0,0}, {2,0,0}, {2,2,0}, {3,2,0}, {1.5,4}, {0,2,0}, {1,2,0}}),
+			p13({{0,0,0}, {4,0,0}, {4,2,0}, {3,1,0}, {3,3,0}, {4,2.5,0}, {4,4,0}, {0,4,0}, {2,3,0}, {2,1,0}});
 	Point p({-1, 1, 0}), q({2, 2, 0}), r({3, 2, 0}), s({-1,1,0}), t({1,1,0}), u({0,1,0}), v({2,1,0});
 	
 	cout << endl;
@@ -355,7 +366,28 @@ void TestGeom() {
 	cout << p5 << " area : " << p5.area() << endl;	
 	cout << p6 << " area : " << p6.area() << endl;	
 	cout << p7 << " area : " << p7.area() << endl;	
-				
+	
+	std::vector<std::tuple<int,int,int>> vecTri;
+	int i, j, k;
+	cout << endl;
+	p5.genTriangles(vecTri);
+	cout << p5 << " triangulation is : "; PRINT_TRI(vecTri);
+	
+	p6.genTriangles(vecTri);
+	cout << p6 << " triangulation is : "; PRINT_TRI(vecTri);
+	
+	p10.genTriangles(vecTri);
+	cout << p10 << " triangulation is : "; PRINT_TRI(vecTri);
+	
+	p11.genTriangles(vecTri);
+	cout << p11 << " triangulation is : "; PRINT_TRI(vecTri);
+	
+	p12.genTriangles(vecTri);
+	cout << p12 << " triangulation is : "; PRINT_TRI(vecTri);
+	
+	p13.genTriangles(vecTri);
+	cout << p13 << " triangulation is : "; PRINT_TRI(vecTri);
+					
 }
 
 

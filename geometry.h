@@ -143,7 +143,7 @@ public:
 	virtual BBox boundBox(void) const = 0;
 	virtual bool doesIntersect(const Shape& s) const = 0;
 	virtual double area(void) const = 0;
-	virtual bool isConvex(void) const = 0;  
+	virtual bool isConvex(void) const = 0;
 	
 	  // Output function
 	virtual std::ostream& print(std::ostream&) const = 0;
@@ -179,6 +179,11 @@ public:
 	virtual bool doesIntersect(const Shape& s) const;
 	virtual double area(void) const;
 	virtual bool isConvex(void) const; 
+	
+	// Shape specific 
+	
+	// Generate triangles from the shape (triangulate)
+	virtual int genTriangles(std::vector<std::tuple<int,int,int>>& vecTri) const;  
 	
 	// Output function
 	virtual std::ostream& print(std::ostream&) const;

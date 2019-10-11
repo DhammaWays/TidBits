@@ -4,6 +4,7 @@
 #include <limits>
 #include <cmath>
 #include <iostream>
+#include <list>
 
 #include "geometry.h"
 #include "numbers.h"
@@ -676,5 +677,180 @@ std::ostream& Polygon::print(std::ostream &o) const {
   return (o);
 }
 
+// Triangulation
 
+struct VertexStatus {
+	int idx; // index into polygon vertices
+	bool isConcave; // Is the corner at this vertex concave?
+};
+
+bool isCornerConcave(const Point& v0, const Point& v1, const Point& v2) {
+	return !(Vec(v0, v1).isAntiClock(Vec(v1, v2)));
+}
+
+// Circular walking of list
+std::list<VertexStatus>::iterator prevElem(std::list<VertexStatus>& list, std::list<VertexStatus>::iterator it) {
+	if( it == list.begin() )
+		return std::prev(list.end());
+	else
+		return std::prev(it); 
+}
+
+std::list<VertexStatus>::iterator nextElem(std::list<VertexStatus>& list, std::list<VertexStatus>::iterator it) {
+	if( it == std::prev(list.end()) || it == list.end() )
+		return list.begin();
+	else
+		return std::next(it); 
+}
+
+bool nextConcaveCorner(const std::list<VertexStatus>& list, std::list<VertexStatus>::iterator& it) {
+	while( it != list.end() && !(*it).isConcave ) {
+		it++;
+	}
+	
+	return (it != list.end() && (*it).isConcave);
+}
+
+bool isConcaveVertex(const std::list<VertexStatus>& vList, const int v) {
+	for( auto it = vList.begin(); it != vList.end(); it++ ) {
+		if( (*it).idx == v )
+			return (*it).isConcave;
+	}
+	
+	return false;	
+}
+
+// Check if this a valid triangle, therefore no polygon vertex is inside given triangle
+bool validTriangle(const Polygon& poly, const std::list<VertexStatus>& vList,
+                   const int v0, const int v1, const int v2) {
+	Polygon tri({poly.mVertices[v0], poly.mVertices[v1], poly.mVertices[v2]});
+	for(int i=0; i < poly.mVertices.size(); i++) {
+		if( i != v0  && i != v1 && i != v2 && isConcaveVertex(vList, i) )  { // Do not want to check with the triangle itself!
+			if( tri.isInside(poly.mVertices[i]) ) 
+				return false;
+		}
+	}
+	
+	// No vertex found inside given triangle
+	return true;			
+	
+}
+
+void updateConcavity(const Polygon& poly, std::list<VertexStatus>& vList, std::list<VertexStatus>::iterator& it) {
+	// Update concavity status of our current concave vertex
+	auto itPrev1 = prevElem(vList, it);
+	auto itNext1 = nextElem(vList, it);
+	(*it).isConcave = isCornerConcave(poly.mVertices[(*itPrev1).idx], poly.mVertices[(*it).idx], 
+									  poly.mVertices[(*itNext1).idx]);	
+}
+
+// Generate triangles from the shape (tessellate shape into triangles)
+int Polygon::genTriangles(std::vector<std::tuple<int,int,int>>& vecTri) const {
+	// Tesslate any arbitary polygon (concave or convex) into triangles
+	// Our approach:
+	// 1) Classify all corners (vertex) as either having concavity or not
+	// 2) While there is an concave corner left, do
+	//    	Chop-off concave corner:
+	//			Spit out a triangle with its previous and next vertex if possible
+	//				Only attempt to spit out if it is a valid triangle
+	//				Remove the spitted out previous and next vertex
+	//		Update concavity status of current vertex and new adjacent vertices (after previous adjacent vertex removals)
+	//		If current vertex is no longer concave, move to next concave corner
+	// 3) After we have removed all concavity, we will be left with convex polygon
+	// 4) Spit out fanned triangles for the remaining convex polygon
+	
+	const int N = mVertices.size();
+	vecTri.clear();
+	
+	if( N < 3 ) {
+		return 0; 
+	}
+	else if( N == 3 ) { // Do not need to triangulate an already triangle!
+		vecTri.push_back(std::make_tuple(0, 1, 2));
+		return 1;
+	}
+	else if( this->isConvex() ) { // Pure convex shape
+		// Create a fan of triangles with first vertex
+		for(int i = 1; i < N-1; i++) {
+			vecTri.push_back(std::make_tuple(0, i, i+1));
+		}
+		
+		return vecTri.size();		
+	}
+	
+	// Initialize each vertex with its concavity info
+	std::list<VertexStatus> vList;
+	VertexStatus vS;
+	vS.idx = 0;
+	vS.isConcave = isCornerConcave(mVertices[N-1], mVertices[0], mVertices[1]);
+	vList.push_back(vS);
+	for(int i=1; i < N; i++) {
+		vS.idx = i;
+		vS.isConcave = isCornerConcave(mVertices[i-1], mVertices[i], mVertices[(i+1)%N]);
+		vList.push_back(vS);
+		}
+		
+	// Start chopping of concave corners
+	auto it = vList.begin();
+	auto itPrev1=it, itNext1=it, itPrev2=it, itNext2=it;
+	int i, j, k;
+	while( nextConcaveCorner(vList, it) && vecTri.size() < N )  {
+	
+		// Spit out a triangle with pervious vertex if we can
+		itPrev1 = prevElem(vList, it);
+		itPrev2 = prevElem(vList, itPrev1);
+		if( !((*itPrev1).isConcave) ) {
+			i = (*itPrev2).idx; j = (*itPrev1).idx; k = (*it).idx;
+			if( validTriangle(*this, vList, i, j, k) ) {
+				vecTri.push_back(std::make_tuple(i, j, k));	
+						
+				// Remove the previous vertex
+				vList.erase(itPrev1);
+			}			
+		}
+		
+		// Spit out a triangle with next vertex if we can
+		itNext1 = nextElem(vList, it);
+		itNext2 = nextElem(vList, itNext1);
+		if( !((*itNext1).isConcave) ) {
+			i = (*it).idx; j = (*itNext1).idx; k = (*itNext2).idx;
+			if( validTriangle(*this, vList, i, j, k) ) {		
+				vecTri.push_back(std::make_tuple(i, j, k));
+			
+				// Remove the next vertex
+				vList.erase(itNext1);	
+			}		
+		}
+		
+		// Update concavity status of our current concave vertex and its two neigbhors
+		updateConcavity(*this, vList, it);
+		
+		itPrev1 = prevElem(vList, it);
+		updateConcavity(*this, vList, itPrev1);
+				
+		itNext1 = nextElem(vList, it);
+		updateConcavity(*this, vList, itNext1);
+		
+		// Degeneracy check
+		if( itPrev1 == itNext1 ) 
+			break;
+	}
+	
+	// We should only have convex polygon remaining now
+	// Just create a fan of triangles starting from first vertex
+	
+	auto it0 = vList.begin();
+	auto it1 = std::next(it0);
+	for( auto it = it1; it != vList.end(); it++ ) {
+	    it1 = std::next(it);
+		if( it1 != vList.end() ) {
+			assert( !((*it0).isConcave) && !((*it).isConcave) && !((*it1).isConcave) );
+			vecTri.push_back(std::make_tuple((*it0).idx, (*it).idx, (*it1).idx));
+			}		
+	}
+			
+
+	// Done with triangulating our polygon, phew!
+	return vecTri.size();		
+}  
 
