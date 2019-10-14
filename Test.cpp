@@ -359,13 +359,13 @@ void TestGeom() {
 	cout << p7 << " is convex : " << p7.isConvex() << endl;	
 
 	cout << endl;
-	cout << p1 << " area : " << p1.area() << endl;
-	cout << p2 << " area : " << p2.area() << endl;
-	cout << p3 << " area : " << p3.area() << endl;
-	cout << p4 << " area : " << p4.area() << endl;
-	cout << p5 << " area : " << p5.area() << endl;	
-	cout << p6 << " area : " << p6.area() << endl;	
-	cout << p7 << " area : " << p7.area() << endl;	
+	cout << p1 << " area : " << p1.Area() << endl;
+	cout << p2 << " area : " << p2.Area() << endl;
+	cout << p3 << " area : " << p3.Area() << endl;
+	cout << p4 << " area : " << p4.Area() << endl;
+	cout << p5 << " area : " << p5.Area() << endl;	
+	cout << p6 << " area : " << p6.signedArea() << endl;	
+	cout << p7 << " area : " << p7.signedArea() << endl;	
 	
 	std::vector<std::tuple<int,int,int>> vecTri;
 	int i, j, k;

@@ -181,6 +181,14 @@ Vec Vec::unit(void) const {
   return (tmp/mag());
 }
 
+// Absolute value
+Vec Vec::abs(void) const {
+	Vec tmp(*this);
+	tmp.x = ABS(tmp.x); tmp.y = ABS(tmp.y); tmp.z = ABS(tmp.z);
+	
+	return tmp;
+}
+
 // Dot (Scalar Product): V.v1
 // (x1, y1, z1).(x2, y2, z2) => x1*x2 + y1*y2 + z1*z2
 double Vec::dot(const Vec &mv) const {
@@ -331,6 +339,25 @@ BBox Line::boundBox(void) const {
 	return bound;
 }
 
+// Check if given line and polygon intersect
+// It wil lonly return true if two of them actually intersect (i.e. at least one line intersects)
+// Overlap: It will return false in case line is contained in polygon!
+
+bool doesLinePolygonIntersect(const Line& line, const Polygon& poly) {
+	// Check if line segment intersects any of polygon edges. 
+	// Need to be careful to pick the last connecting last point to first point.
+	// (i+1) % N returns 0 for last point, allowing us to pick last edge.
+
+	for(int i=0; i < poly.mVertices.size(); i++) {
+		Line l1(poly.mVertices[i], poly.mVertices[(i+1) % poly.mVertices.size()]);
+		if( line.doesIntersect(l1) )
+			return true;
+	}
+	
+	// Checked all edges of polygon, no intersection found!
+	return false;
+}		
+	
 // Line to Line intersection
 bool Line::doesIntersect(const Shape& s) const {
 	// Line to Line intersection Algo:
@@ -355,19 +382,13 @@ bool Line::doesIntersect(const Shape& s) const {
 		assert(pP); 
 		
 		// Check if any of the line segment point is inside the polygon.
+		// We could have checked mid-point of line segment as well if check on end-points fail!
 		if( pP->isInside(first) || pP->isInside(second) ) {
 			return true;
 		}
 		
-		// Do proper intersection check
-		for(int i=0; i < pP->mVertices.size(); i++) {
-			Line l1(pP->mVertices[i], pP->mVertices[(i+1) % pP->mVertices.size()]);
-			if( this->doesIntersect(l1) )
-				return true;
-		}
-		
-		// Checked al llines of polygon, no intersections found!
-		return false;		
+		// Do proper intersection check as line may be crossing polygon
+		return doesLinePolygonIntersect(*this, *pP);
 	}
 	else if ( typeid(s) != typeid(Line) ) {
 		return false;
@@ -416,7 +437,11 @@ bool Line::isInside(const Point& p) const {
 	return (vL.cross(vP) == 0);	
 }
 
-double Line::area(void) const {
+double Line::Area(void) const {
+	return 0;
+}
+
+double Line::signedArea(void) const {
 	return 0;
 }
 	
@@ -463,14 +488,10 @@ bool doPolygonsIntersect(const Polygon& poly1, const Polygon& poly2) {
 	// (i+1) % N returns 0 for last point, allowing us to pick last line.
 	
 	const int N = poly1.mVertices.size();
-	const int M = poly2.mVertices.size();	
 	for(int i=0; i < N; i++)	{
 		Line l1(poly1.mVertices[i], poly1.mVertices[(i+1) % N]);
-		for(int j=0; j < M; j++) {
-			Line l2(poly2.mVertices[j], poly2.mVertices[(j+1) % M]);
-			if( l1.doesIntersect(l2) )
-				return true;
-		}	
+		if( doesLinePolygonIntersect(l1, poly2) )
+				return true;	
 	}
 
 	// If we have reached so far, polygons are not intersecting
@@ -585,8 +606,9 @@ bool Polygon::isInside(const Point& p) const {
 	return isOdd(nIntersections);
 }
 
-double Polygon::area(void) const {
-	// Area of a general 3D planar polygon having normal unit vector n'
+// Signed Area: +ive fo ranti-clockwise ordere polygon, -ive for clockwise ordered polygon
+double Polygon::signedArea(void) const {
+	// Signed area of a general 3D planar polygon having normal unit vector n'
 	// Signed Area = 1/2 * (Normal . (SUM of cross product of its vertices))
 	//
 	// Area = 1/2 * (n'.SUM(Vi * Vi+1)), where i=0, n-1, and Vi is "i"th vertex as vector
@@ -623,7 +645,10 @@ double Polygon::area(void) const {
 		
 		// We have the normal as soon as we find two consecutive edges which are not collinear
 		if( n.magsqr() != 0 ) {
-			normal = n.unit();
+			// We want positive unit normal to get proper sign otherwise sign of "v" and sign of "normal"
+			// cancel out, not giving us true signed area!
+			normal = n.unit().abs();
+			
 			break;
 		}
 	}
@@ -631,11 +656,15 @@ double Polygon::area(void) const {
 	// Area = 1/2 * Normal . SUM(cross product of its vertices)
 	area = 0.5 * (normal.dot(v));
 	
-	// Return absolute value
-	// We could have returned signed area, which can be used to find orientation of polygon
+	// Returning with sign which can be used to find orientation of polygon
 	// positive sign means polygon vertices are ordered anticlockwise.	
 	
-	return ABS(area);
+	return area;
+}
+
+// Return absolute value of signed area
+double Polygon::Area(void) const {
+	return ABS(signedArea());
 }
 	
 bool Polygon::isConvex(void) const {
@@ -683,6 +712,13 @@ struct VertexStatus {
 	int idx; // index into polygon vertices
 	bool isConcave; // Is the corner at this vertex concave?
 };
+
+// Check if a croner v0-v1-v2 (edge v0v1 is first edge, edge v1-v2 is second edge in anti-clockwise order)
+// is concave (i.e. repersents a cavity in polygon).
+//
+// Assuming polygon vertices are ordered in anti-clockwise (otherwise check will be reverse), we check
+// if first edge vector to second edg vector goes in clockwise direction. For regular corner (convex),
+// it should be anticlockwise direction (i fgiven polygon vertices are anticlockwise oredered).
 
 bool isCornerConcave(const Point& v0, const Point& v1, const Point& v2) {
 	return !(Vec(v0, v1).isAntiClock(Vec(v1, v2)));
@@ -744,9 +780,10 @@ void updateConcavity(const Polygon& poly, std::list<VertexStatus>& vList, std::l
 									  poly.mVertices[(*itNext1).idx]);	
 }
 
-// Generate triangles from the shape (tessellate shape into triangles)
+// Generate triangles from the shape (tessellate/triangulate shape into triangles)
 int Polygon::genTriangles(std::vector<std::tuple<int,int,int>>& vecTri) const {
-	// Tesslate any arbitary polygon (concave or convex) into triangles
+	// Tesslate any arbitary polygon (concave or convex) into triangles.
+	// Assumption: Polygon vertices are given in anticlockwise order and it si not self-intersecting.
 	// Our approach:
 	// 1) Classify all corners (vertex) as either having concavity or not
 	// 2) While there is an concave corner left, do

@@ -96,6 +96,9 @@ public:
   // Unit Vector
   Vec unit(void) const;
   
+  // Absolute value
+  Vec abs(void) const;
+  
   // Dot (inner) product : scalar
   double operator*(const Vec &) const;
   double dot(const Vec &) const;
@@ -142,7 +145,8 @@ public:
 	virtual bool isInside(const Point& p) const = 0;
 	virtual BBox boundBox(void) const = 0;
 	virtual bool doesIntersect(const Shape& s) const = 0;
-	virtual double area(void) const = 0;
+	virtual double Area(void) const = 0;
+	virtual double signedArea(void) const = 0; // can be used to tell the shape vertices order (anti-clock: +ive)
 	virtual bool isConvex(void) const = 0;
 	
 	  // Output function
@@ -158,7 +162,8 @@ public:
 	virtual bool isInside(const Point& p) const;
 	virtual BBox boundBox(void) const;
 	virtual bool doesIntersect(const Shape& s) const;
-	virtual double area(void) const;
+	virtual double Area(void) const;
+	virtual double signedArea(void) const; // can be used to tell the shape vertices order (anti-clock: +ive)
 	virtual bool isConvex(void) const; 
 	
 	// Output function
@@ -171,13 +176,14 @@ public: // Data
 
 class Polygon: public Shape {
 public:
-	Polygon(const std::vector<Point>& vertices);
+	Polygon(const std::vector<Point>& vertices); // Vertices should be given in anti-clockwise order
 	
 	// Interface
 	virtual bool isInside(const Point& p) const;
 	virtual BBox boundBox(void) const;
 	virtual bool doesIntersect(const Shape& s) const;
-	virtual double area(void) const;
+	virtual double Area(void) const;
+	virtual double signedArea(void) const; // can be used to tell the shape vertices order (anti-clock: +ive)
 	virtual bool isConvex(void) const; 
 	
 	// Shape specific 
