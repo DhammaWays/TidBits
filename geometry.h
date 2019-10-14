@@ -177,6 +177,7 @@ public: // Data
 class Polygon: public Shape {
 public:
 	Polygon(const std::vector<Point>& vertices); // Vertices should be given in anti-clockwise order
+	Polygon(const std::vector<std::tuple<Point,Point,Point>>& vecTri); // Construct the shape from list of connected triangles
 	
 	// Interface
 	virtual bool isInside(const Point& p) const;
@@ -190,7 +191,7 @@ public:
 	
 	// Generate triangles from the shape (triangulate)
 	virtual int genTriangles(std::vector<std::tuple<int,int,int>>& vecTri) const;  
-	
+		
 	// Output function
 	virtual std::ostream& print(std::ostream&) const;
   

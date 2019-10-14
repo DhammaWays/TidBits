@@ -5,6 +5,7 @@
 #include <cmath>
 #include <iostream>
 #include <list>
+#include <algorithm>
 
 #include "geometry.h"
 #include "numbers.h"
@@ -456,6 +457,72 @@ std::ostream& Line::print(std::ostream &o) const {
 // Polygon
 
 Polygon::Polygon(const std::vector<Point>& vertices) : mVertices(vertices) {}
+
+typedef std::pair<Point, Point> EDGE;
+
+std::list<EDGE>::iterator findEDGE(std::list<EDGE> vList, EDGE& edge) {
+	for(auto it=vList.begin(); it != vList.end(); it++) {
+		if( (*it) == edge )
+			return it;
+	}
+	
+	return vList.end();
+}
+
+// Construct the shape from list of connected triangles (triangles are in anti-clockwise order)
+Polygon::Polygon(const std::vector<std::tuple<Point,Point,Point>>& vecTri) {
+	// Algo to construct shape from list of connected triangles
+	// 1) Construct a list of exterior edges from list of triangles (remove all interior edges)
+	//    For each edge in triangle:
+	//			a) Remove the edge if already exists (interior edge)
+	//			b) Insert the edge in right place (linking with previous edge)
+	// 2) Spit out the shape by traversing the edge list
+	
+	// Make the exterior edge list
+	Point v[3];
+    EDGE pairPoints;
+	std::list<EDGE> vList;
+	for(int i=0; i < vecTri.size(); i++) {
+		std::tie(v[0], v[1], v[2]) = vecTri[i];
+		for( int j = 0; j < 3; j++ ) {
+		    pairPoints = std::make_pair(v[(j+1)%3], v[j]);
+			auto it = std::find(vList.begin(), vList.end(), pairPoints);
+			//auto it = findEDGE(vList, pairPoints);
+			if( it != vList.end() ) { // interior edge found
+				vList.erase(it); // remove the edge
+			}
+			else { // Insert the edge in right place 
+				auto itInsert = std::find_if(vList.begin(), vList.end(), [&v, j](EDGE& e){return e.second == v[j];});
+				if( itInsert != vList.end() ) 
+					vList.insert(std::next(itInsert), std::make_pair(v[j], v[(j+1)%3]));
+				else
+					vList.push_back(std::make_pair(v[j], v[(j+1)%3]));			
+			}			
+		}		
+	}
+	
+	// Put elements in connected order if they are not already
+	for(auto it = vList.begin(); it != vList.end(); it++) {
+		auto itNext = std::next(it);
+		if( it != vList.end() && !((*it).second == (*itNext).first) ) {
+			auto itInsert = std::find_if(it, vList.end(), [&it](EDGE& e){return e.first == (*it).second;});
+			if( itInsert != vList.end() ) { // Move the element to its right connected position
+				vList.insert(itNext, (*itInsert));
+				vList.erase(itInsert);
+			}
+		}
+	}
+	
+	// Populate our polygon vertices
+	for(auto& e: vList) {
+		mVertices.push_back(e.first);
+		if( e.second == vList.front().first ) // reached back to start of loop
+			break;
+	}
+	
+	// Done	
+}
+
 
 BBox Polygon::boundBox(void) const {
 	BBox bound = {{0, 0, 0}, {0, 0, 0}};

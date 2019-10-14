@@ -265,6 +265,17 @@ void TestStr() {
 		cout << "[" << std::get<0>(tri) << ", " << std::get<1>(tri) << ", " << std::get<2>(tri) << "], "; \
 	} \
 	cout << endl;
+	
+#define GEN_TRI(poly, vecTri, vecTriPnts) \
+    vecTriPnts.clear(); \
+	for(auto& e: vecTri) { \
+		int i, j, k; \
+		std::tie(i,j,k) = e; \
+		vecTriPnts.push_back(std::make_tuple(poly.mVertices[i], poly.mVertices[j], poly.mVertices[k])); \
+	} \
+	std::swap(vecTriPnts.front(), vecTriPnts.back()); \
+	std::swap(vecTriPnts.front(), vecTriPnts[vecTri.size()/2]); \
+	std::swap(vecTriPnts.back(), vecTriPnts[vecTri.size()/3]);
 
 
 void TestGeom() {
@@ -368,26 +379,46 @@ void TestGeom() {
 	cout << p7 << " area : " << p7.signedArea() << endl;	
 	
 	std::vector<std::tuple<int,int,int>> vecTri;
-	int i, j, k;
+	std::vector<std::tuple<Point,Point,Point>> vecTriPnts;
+	//int i, j, k;
 	cout << endl;
 	p5.genTriangles(vecTri);
 	cout << p5 << " triangulation is : "; PRINT_TRI(vecTri);
 	
+	GEN_TRI(p5, vecTri, vecTriPnts);
+	Polygon polyRecon(vecTriPnts);
+	cout << "Reconstructed polygon from triangles is: " << polyRecon << endl;
+	
 	p6.genTriangles(vecTri);
-	cout << p6 << " triangulation is : "; PRINT_TRI(vecTri);
+	cout << endl << p6 << " triangulation is : "; PRINT_TRI(vecTri);
+	GEN_TRI(p6, vecTri, vecTriPnts);
+	polyRecon = Polygon(vecTriPnts);
+	cout << "Reconstructed polygon from triangles is: " << polyRecon << endl;
 	
 	p10.genTriangles(vecTri);
-	cout << p10 << " triangulation is : "; PRINT_TRI(vecTri);
+	cout << endl << p10 << " triangulation is : "; PRINT_TRI(vecTri);
+	GEN_TRI(p10, vecTri, vecTriPnts);
+	polyRecon = Polygon(vecTriPnts);
+	cout << "Reconstructed polygon from triangles is: " << polyRecon << endl;
 	
 	p11.genTriangles(vecTri);
-	cout << p11 << " triangulation is : "; PRINT_TRI(vecTri);
+	cout << endl << p11 << " triangulation is : "; PRINT_TRI(vecTri);
+	GEN_TRI(p11, vecTri, vecTriPnts);
+	polyRecon = Polygon(vecTriPnts);
+	cout << "Reconstructed polygon from triangles is: " << polyRecon << endl;
 	
 	p12.genTriangles(vecTri);
-	cout << p12 << " triangulation is : "; PRINT_TRI(vecTri);
+	cout << endl << p12 << " triangulation is : "; PRINT_TRI(vecTri);
+	GEN_TRI(p12, vecTri, vecTriPnts);
+	polyRecon = Polygon(vecTriPnts);
+	cout << "Reconstructed polygon from triangles is: " << polyRecon << endl;
 	
 	p13.genTriangles(vecTri);
-	cout << p13 << " triangulation is : "; PRINT_TRI(vecTri);
-					
+	cout << endl << p13 << " triangulation is : "; PRINT_TRI(vecTri);
+	GEN_TRI(p13, vecTri, vecTriPnts);
+	polyRecon = Polygon(vecTriPnts);
+	cout << "Reconstructed polygon from triangles is: " << polyRecon << endl;
+				
 }
 
 
