@@ -149,6 +149,9 @@ public:
 	virtual double signedArea(void) const = 0; // can be used to tell the shape vertices order (anti-clock: +ive)
 	virtual bool isConvex(void) const = 0;
 	
+	// Comparison operators
+  	bool operator==(const Shape &rhsShape) const;
+	
 	  // Output function
 	virtual std::ostream& print(std::ostream&) const = 0;
   	friend std::ostream &operator<<(std::ostream &, const Shape& s);
@@ -165,6 +168,9 @@ public:
 	virtual double Area(void) const;
 	virtual double signedArea(void) const; // can be used to tell the shape vertices order (anti-clock: +ive)
 	virtual bool isConvex(void) const; 
+
+	// Comparison operators
+  	bool operator==(const Shape &rhsShape) const;
 	
 	// Output function
 	virtual std::ostream& print(std::ostream&) const;
@@ -187,9 +193,12 @@ public:
 	virtual double signedArea(void) const; // can be used to tell the shape vertices order (anti-clock: +ive)
 	virtual bool isConvex(void) const; 
 	
+	// Comparison operators, returns true if polygon is exactly same shape (0..k..n == k..n..0)
+  	bool operator==(const Shape &rhsShape) const;
+	
 	// Shape specific 
 	
-	// Generate triangles from the shape (triangulate)
+	// Generate triangles from the shape (triangulate), output is tupl eof triangle vertices index into polygon points
 	virtual int genTriangles(std::vector<std::tuple<int,int,int>>& vecTri) const;  
 		
 	// Output function

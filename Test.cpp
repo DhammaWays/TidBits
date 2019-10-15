@@ -338,6 +338,9 @@ void TestGeom() {
 	Point p({-1, 1, 0}), q({2, 2, 0}), r({3, 2, 0}), s({-1,1,0}), t({1,1,0}), u({0,1,0}), v({2,1,0});
 	
 	cout << endl;
+	cout << "Are " << p4 << " and " << p6 << " same?: " << (p4 == p6) << endl;
+	
+	cout << endl;
 	cout << p << " is inside " << p1 << " : " << p1.isInside(p) << endl;
 	cout << q << " is inside " << p1 << " : " << p1.isInside(q) << endl;
 	cout << r << " is inside " << p1 << " : " << p1.isInside(r) << endl;
@@ -383,41 +386,46 @@ void TestGeom() {
 	//int i, j, k;
 	cout << endl;
 	p5.genTriangles(vecTri);
-	cout << p5 << " triangulation is : "; PRINT_TRI(vecTri);
-	
+	cout << p5 << " triangulation is : "; PRINT_TRI(vecTri);	
 	GEN_TRI(p5, vecTri, vecTriPnts);
 	Polygon polyRecon(vecTriPnts);
 	cout << "Reconstructed polygon from triangles is: " << polyRecon << endl;
+	cout << "Does reconstructed polygon match original? : " << (p5 == polyRecon) << endl;
 	
 	p6.genTriangles(vecTri);
 	cout << endl << p6 << " triangulation is : "; PRINT_TRI(vecTri);
 	GEN_TRI(p6, vecTri, vecTriPnts);
 	polyRecon = Polygon(vecTriPnts);
 	cout << "Reconstructed polygon from triangles is: " << polyRecon << endl;
+	cout << "Does reconstructed polygon match original? : " << (p6 == polyRecon) << endl;
 	
 	p10.genTriangles(vecTri);
 	cout << endl << p10 << " triangulation is : "; PRINT_TRI(vecTri);
 	GEN_TRI(p10, vecTri, vecTriPnts);
 	polyRecon = Polygon(vecTriPnts);
 	cout << "Reconstructed polygon from triangles is: " << polyRecon << endl;
+	cout << "Does reconstructed polygon match original? : " << (p10 == polyRecon) << endl;
 	
 	p11.genTriangles(vecTri);
 	cout << endl << p11 << " triangulation is : "; PRINT_TRI(vecTri);
 	GEN_TRI(p11, vecTri, vecTriPnts);
 	polyRecon = Polygon(vecTriPnts);
 	cout << "Reconstructed polygon from triangles is: " << polyRecon << endl;
+	cout << "Does reconstructed polygon match original? : " << (p11 == polyRecon) << endl;
 	
 	p12.genTriangles(vecTri);
 	cout << endl << p12 << " triangulation is : "; PRINT_TRI(vecTri);
 	GEN_TRI(p12, vecTri, vecTriPnts);
 	polyRecon = Polygon(vecTriPnts);
 	cout << "Reconstructed polygon from triangles is: " << polyRecon << endl;
+	cout << "Does reconstructed polygon match original? : " << (p12 == polyRecon) << endl;
 	
 	p13.genTriangles(vecTri);
 	cout << endl << p13 << " triangulation is : "; PRINT_TRI(vecTri);
 	GEN_TRI(p13, vecTri, vecTriPnts);
 	polyRecon = Polygon(vecTriPnts);
 	cout << "Reconstructed polygon from triangles is: " << polyRecon << endl;
+	cout << "Does reconstructed polygon match original? : " << (p13 == polyRecon) << endl;
 				
 }
 

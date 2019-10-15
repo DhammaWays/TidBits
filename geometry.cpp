@@ -295,6 +295,7 @@ std::ostream &operator<<(std::ostream &o, const Shape &s) {
 
 Line::Line(const Point& p0, const Point& p1) : first(p0), second(p1) {}
 
+// Simple minmax bound
 BBox Line::boundBox(void) const {
 	BBox bound;
 	
@@ -359,7 +360,7 @@ bool doesLinePolygonIntersect(const Line& line, const Polygon& poly) {
 	return false;
 }		
 	
-// Line to Line intersection
+// Line to Line intersection: Overlaps and concident end points are treated as intersections
 bool Line::doesIntersect(const Shape& s) const {
 	// Line to Line intersection Algo:
 	// 1) Do NOT intersect if their bound boxes do not overlap
@@ -425,6 +426,7 @@ bool Line::doesIntersect(const Shape& s) const {
 	return true;
 }
 
+// Is given point within line segment? End points are treated as within.
 bool Line::isInside(const Point& p) const {
 	// Check if given point is within line segment
 	if( !isPointInsideBoundBox(this->boundBox(), p) )
@@ -449,6 +451,23 @@ double Line::signedArea(void) const {
 bool Line::isConvex(void) const {
 	return true;
 } 
+
+// Comparison operator, returns true if line end points are same in any order
+bool Line::operator==(const Shape &rhsShape) const {
+	
+	if( typeid(rhsShape) != typeid(Line) ) 
+			return false;
+	
+	// Line to Line comparsion
+	const Line* const pL2 = static_cast<const Line* const>(&rhsShape);
+	assert( pL2 );
+	if( !pL2 ) {
+		return false;
+		}
+	
+	// Lines are same if their end points are same in any order
+	return ((first == pL2->first && second == pL2->second) || (second == pL2->first && first == pL2->second));			
+}
 
 std::ostream& Line::print(std::ostream &o) const {
   return (o << "Line : {" << first << ", " << second << "}");
@@ -477,6 +496,8 @@ Polygon::Polygon(const std::vector<std::tuple<Point,Point,Point>>& vecTri) {
 	//			a) Remove the edge if already exists (interior edge)
 	//			b) Insert the edge in right place (linking with previous edge)
 	// 2) Spit out the shape by traversing the edge list
+	
+	// We are using list here but could have used map for better performance of find operation.
 	
 	// Make the exterior edge list
 	Point v[3];
@@ -514,6 +535,9 @@ Polygon::Polygon(const std::vector<std::tuple<Point,Point,Point>>& vecTri) {
 	}
 	
 	// Populate our polygon vertices
+	// There could be multiple loops if some interior triangles are missing! It can be used to detect
+	// holes in shape!
+	// Here we return the first loop, which works when there are no missing interior triangles.
 	for(auto& e: vList) {
 		mVertices.push_back(e.first);
 		if( e.second == vList.front().first ) // reached back to start of loop
@@ -523,6 +547,7 @@ Polygon::Polygon(const std::vector<std::tuple<Point,Point,Point>>& vecTri) {
 	// Done	
 }
 
+// Simple minmax bound box
 
 BBox Polygon::boundBox(void) const {
 	BBox bound = {{0, 0, 0}, {0, 0, 0}};
@@ -580,13 +605,14 @@ bool doesPoly1VertexLieInPoly2(const Polygon& poly1, const Polygon& poly2) {
 	return false;	
 } 
 
-// Polygon to Shape intersection
+// Polygon to Shape intersection, we do check for full overlap (one inside another) here!
 bool Polygon::doesIntersect(const Shape& s) const {
 	// Polygon to Polygon intersection Algo:
 	// 1) Do NOT intersect if their bound boxes do not overlap
-	// 2) Check if any edge of first shape intersects any edge of second shape
+	// 2) Check for overlaps pure edge to edge intersection will miss out the case when one is inside another!)
+	// 3) Check if any edge of first shape intersects any edge of second shape
 	//    We short circuit with "Intersect" as soon as we find the first intersection!
-	// 3) If we have not found any intersection amongtheir edges, these shapes do not intersect.
+	// 4) If we have not found any intersection among their edges, these shapes do not intersect.
 	
 	
 	// Need to branch based on what kind of shape is coming in
@@ -646,6 +672,8 @@ bool doesVertexEdgeLiesBelowRay(const Line& edge, const Line& ray) {
 	}	
 }
 
+// Is given point inside the polygon? Boundary is treated as inside.
+
 bool Polygon::isInside(const Point& p) const {
 	BBox bound = this->boundBox();
 	if( !isPointInsideBoundBox(bound, p) )
@@ -673,7 +701,7 @@ bool Polygon::isInside(const Point& p) const {
 	return isOdd(nIntersections);
 }
 
-// Signed Area: +ive fo ranti-clockwise ordere polygon, -ive for clockwise ordered polygon
+// Signed Area: +ive for anti-clockwise ordered polygon, -ive for clockwise ordered polygon
 double Polygon::signedArea(void) const {
 	// Signed area of a general 3D planar polygon having normal unit vector n'
 	// Signed Area = 1/2 * (Normal . (SUM of cross product of its vertices))
@@ -723,7 +751,7 @@ double Polygon::signedArea(void) const {
 	// Area = 1/2 * Normal . SUM(cross product of its vertices)
 	area = 0.5 * (normal.dot(v));
 	
-	// Returning with sign which can be used to find orientation of polygon
+	// Returning sign which can be used to find orientation of polygon
 	// positive sign means polygon vertices are ordered anticlockwise.	
 	
 	return area;
@@ -733,7 +761,8 @@ double Polygon::signedArea(void) const {
 double Polygon::Area(void) const {
 	return ABS(signedArea());
 }
-	
+
+// Is the convex (i.e. no cavity in it)?	
 bool Polygon::isConvex(void) const {
 	// Assuming given polygon is not self-intersecting, we go round the polygon edges
 	// seeing if winding (turn) is consistent as we move from one edge to another edge. If we
@@ -780,7 +809,7 @@ struct VertexStatus {
 	bool isConcave; // Is the corner at this vertex concave?
 };
 
-// Check if a croner v0-v1-v2 (edge v0v1 is first edge, edge v1-v2 is second edge in anti-clockwise order)
+// Check if a corner v0-v1-v2 (edge v0v1 is first edge, edge v1-v2 is second edge in anti-clockwise order)
 // is concave (i.e. repersents a cavity in polygon).
 //
 // Assuming polygon vertices are ordered in anti-clockwise (otherwise check will be reverse), we check
@@ -957,4 +986,47 @@ int Polygon::genTriangles(std::vector<std::tuple<int,int,int>>& vecTri) const {
 	// Done with triangulating our polygon, phew!
 	return vecTri.size();		
 }  
+
+// Comparison operator, returns true if polygon is exactly same shape (0..k..n == k..n..0)
+bool Polygon::operator==(const Shape &rhsShape) const {
+	
+	if( typeid(rhsShape) != typeid(Polygon) ) 
+			return false;
+	
+	// Polygon to Polygon comparsion
+	const Polygon* const pS2 = static_cast<const Polygon* const>(&rhsShape);
+	assert( pS2 );
+	if( !pS2 ) {
+		return false;
+		}
+	
+	// Trivial case of exact same vertices
+	if( mVertices == pS2->mVertices )
+		return true;
+	else if( mVertices.size() != pS2->mVertices.size() ) // Even their vertex count do not match!
+		return false;
+		
+	// Need to check if order of vertices in both the polygons is basically same
+	// We first check where does first vertex of second polygon lie. Then we cyclically
+	// keep checking until we reach back to same vertex.
+	auto it = std::find(mVertices.begin(), mVertices.end(), pS2->mVertices[0]);
+	if( it == mVertices.end() ) // Did not even find match for first vertex of second polygon
+		return false;
+		
+	for( int i=1; i < pS2->mVertices.size(); i++ ) {
+		// Advance first polygon vertices in circular fashion
+		it++;
+		if( it == mVertices.end() )
+			it = mVertices.begin();
+		
+		// Keep comparing until there is match	
+		if( !((*it) == pS2->mVertices[i]) ) // mismatch, bail out, polygons are not same!
+			return false;		
+	}
+	// At this state, Next element in first polygon should be same as first element of second polygon
+	assert( mVertices[((it - mVertices.begin()) + 1)%mVertices.size()] == pS2->mVertices[0] ); // back to original vertex	
+		
+	return true;		
+}
+
 
