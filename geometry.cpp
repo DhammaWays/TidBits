@@ -1079,7 +1079,7 @@ bool compareCyclic(const std::vector<double>& cornerPoly1, const std::vector<dou
 	for( ; bNext && it != cornerPoly1.end(); it = std::find(++it, cornerPoly1.end(), cornerPoly2[0]) ) {			
 		// Start comparing cyclically from next element
 		bNext = false;	
-		for(int i=iFirst, j = (it - cornerPoly1.begin())+1; (i < cornerPoly2.size() && i >= iFirst) ; i += iDir, j++ ) {
+		for(int i=iFirst, j = (it - cornerPoly1.begin())+1; (i < cornerPoly2.size() && i > 0) ; i += iDir, j++ ) {
 			// Walk cyclically in given direction
 			if( cornerPoly2[i] != cornerPoly1[j%cornerPoly1.size()] ) {
 				bNext = true;
