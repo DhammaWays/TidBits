@@ -150,7 +150,8 @@ public:
 	virtual bool isConvex(void) const = 0;
 	
 	// Comparison operators
-  	bool operator==(const Shape &rhsShape) const;
+  	virtual bool operator==(const Shape &rhsShape) const = 0;; // coordinates are same but in cyclic order
+	virtual bool isCongruent(const Shape &rhsShape) const = 0 ; // coordinates need not be same, i.e. can be affine transformed
 	
 	  // Output function
 	virtual std::ostream& print(std::ostream&) const = 0;
@@ -171,6 +172,7 @@ public:
 
 	// Comparison operators
   	bool operator==(const Shape &rhsShape) const;
+	bool isCongruent(const Shape &rhsShape) const; // coordinates need not be same, i.e. can be affine transformed
 	
 	// Output function
 	virtual std::ostream& print(std::ostream&) const;
@@ -195,6 +197,7 @@ public:
 	
 	// Comparison operators, returns true if polygon is exactly same shape (0..k..n == k..n..0)
   	bool operator==(const Shape &rhsShape) const;
+	bool isCongruent(const Shape &rhsShape) const; // coordinates need not be same, i.e. can be affine transformed
 	
 	// Shape specific 
 	

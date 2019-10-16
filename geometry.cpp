@@ -469,6 +469,25 @@ bool Line::operator==(const Shape &rhsShape) const {
 	return ((first == pL2->first && second == pL2->second) || (second == pL2->first && first == pL2->second));			
 }
 
+// Check if two lines are congruent (i.e. same geometrically)
+bool Line::isCongruent(const Shape &rhsShape) const {
+	// Two lines will be congruent if they are of same length! As they can be easily transformed into another
+	// with affine transformation (translation and rotation).
+	
+	if( typeid(rhsShape) != typeid(Line) ) 
+			return false;
+	
+	// Line to Line comparsion
+	const Line* const pL2 = static_cast<const Line* const>(&rhsShape);
+	assert( pL2 );
+	if( !pL2 ) {
+		return false;
+		}
+	
+	// Lines are congruent if their lengths are same. 
+	return (Vec(first, second).magsqr() == Vec(pL2->first, pL2->second).magsqr());			
+}
+
 std::ostream& Line::print(std::ostream &o) const {
   return (o << "Line : {" << first << ", " << second << "}");
 }
@@ -1029,4 +1048,95 @@ bool Polygon::operator==(const Shape &rhsShape) const {
 	return true;		
 }
 
+// Generate corner measure of given polygon (dot product of edge vector at its corner)
+void genCornerPoly(const Polygon& poly, std::vector<double>& cornerPoly) {
+	const int N = poly.mVertices.size();
+	cornerPoly.clear();
+	for(int i=1; i <= N; i++) {
+		Vec e1(poly.mVertices[i%N], poly.mVertices[(i+1) % N]);
+		Vec e2(poly.mVertices[i%N], poly.mVertices[(i-1) % N]);
+		cornerPoly.push_back( e1.dot(e2));			
+	}	
+}
 
+// Compare two corner measures in either anti-clock wise (+1) or clock-wise (-1) direction
+bool compareCyclic(const std::vector<double>& cornerPoly1, const std::vector<double>& cornerPoly2, const int iDir = 1) {
+	if( cornerPoly1 == cornerPoly2 ) // trivial case when they are same!
+		return true;
+		
+	// Find the first element of second poly in first 
+	auto it = std::find(cornerPoly1.begin(), cornerPoly1.end(), cornerPoly2[0]);
+	if( it == cornerPoly1.end() ) // could not even find match for first measure anywhere in second!
+		return false;
+	
+	// We may have duplicates in poly1, keep looping until we exhaust the poly1
+	bool bNext = true;
+	int iFirst = 1;
+	if( iDir < 0 )
+		iFirst = cornerPoly2.size()-1;
+	
+		
+	for( ; bNext && it != cornerPoly1.end(); it = std::find(++it, cornerPoly1.end(), cornerPoly2[0]) ) {			
+		// Start comparing cyclically from next element
+		bNext = false;	
+		for(int i=iFirst, j = (it - cornerPoly1.begin())+1; (i < cornerPoly2.size() && i >= iFirst) ; i += iDir, j++ ) {
+			// Walk cyclically in given direction
+			if( cornerPoly2[i] != cornerPoly1[j%cornerPoly1.size()] ) {
+				bNext = true;
+				break; 
+			}
+		}
+	}
+	
+	// Did we match?
+	return !bNext;
+}
+
+// Check if two shapes are congruent (i.e. same geometrically)
+bool Polygon::isCongruent(const Shape &rhsShape) const {
+	// Two polygons are congruent if:
+	// a) Same number of points (i.e. same number of edges)
+	// b) Their sides are same size
+	// c) Their inetrior angles are same
+	
+	// For our purpose we do not need to calculat exact size or angle.
+	// We can use exact dot product between two edges for checking both if two edges are of
+	// same size and same angle.
+	// At same corner of both polygon P1, P2:
+	// Let us say edge e1,e2 is in P1, and edge e1', e2' is in P2, then
+	// e1.e2 == e1'.e2' for that corner to match
+	
+	if( typeid(rhsShape) != typeid(Polygon) ) 
+			return false;
+	
+	// Polygon to Polygon comparsion
+	const Polygon* const pS2 = static_cast<const Polygon* const>(&rhsShape);
+	assert( pS2 );
+	if( !pS2 ) {
+		return false;
+		}
+	
+	// Trivial case of exact same vertices
+	if( mVertices == pS2->mVertices )
+		return true;
+	else if( mVertices.size() != pS2->mVertices.size() ) // Even their vertex count do not match!
+		return false;
+		
+	// Need to do actual congrunecy test
+	// We will build a corner measure (in our case dot product) and then compare if these measures
+	// are same in some cyclic order.
+	
+	// Generate corner measure for both polygons
+	std::vector<double> cornerPoly1, cornerPoly2;
+	genCornerPoly(*this, cornerPoly1);
+	genCornerPoly(*pS2, cornerPoly2);
+	
+	// Compare corner measures in cyclic fashion
+	if( compareCyclic(cornerPoly1, cornerPoly2, 1) )
+		return true;
+	else if( compareCyclic(cornerPoly1, cornerPoly2, -1) )
+		return true;
+	
+	// No match found in either direction; two polygons are not congruent!
+	return false;
+}
