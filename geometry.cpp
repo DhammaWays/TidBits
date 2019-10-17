@@ -1048,19 +1048,28 @@ bool Polygon::operator==(const Shape &rhsShape) const {
 	return true;		
 }
 
-// Generate corner measure of given polygon (dot product of edge vector at its corner)
-void genCornerPoly(const Polygon& poly, std::vector<double>& cornerPoly) {
+// Generate corner measure of given polygon
+void genCornerPoly(const Polygon& poly, std::vector<Point>& cornerPoly) {
 	const int N = poly.mVertices.size();
+	Point cornerMeasure;
 	cornerPoly.clear();
 	for(int i=1; i <= N; i++) {
 		Vec e1(poly.mVertices[i%N], poly.mVertices[(i+1) % N]);
 		Vec e2(poly.mVertices[i%N], poly.mVertices[(i-1) % N]);
-		cornerPoly.push_back( e1.dot(e2));			
+		// Our corner measure is cross product between two edges and their individual magnitude
+		// We are storing edge magnitude in sorterd order to make it works whichever order they come in
+		cornerMeasure.z = e1.cross(e2).z; // e1.dot(e2) is not effective when angel is 90 deg between them!
+		cornerMeasure.x = e1.magsqr();
+		cornerMeasure.y = e2.magsqr();
+		if( cornerMeasure.x > cornerMeasure.y ) // swap them, keep minimum first
+			std::swap(cornerMeasure.x, cornerMeasure.y);
+			
+		cornerPoly.push_back( cornerMeasure );			
 	}	
 }
 
 // Compare two corner measures in either anti-clock wise (+1) or clock-wise (-1) direction
-bool compareCyclic(const std::vector<double>& cornerPoly1, const std::vector<double>& cornerPoly2, const int iDir = 1) {
+bool compareCyclic(const std::vector<Point>& cornerPoly1, const std::vector<Point>& cornerPoly2, const int iDir = 1) {
 	if( cornerPoly1 == cornerPoly2 ) // trivial case when they are same!
 		return true;
 		
@@ -1081,7 +1090,7 @@ bool compareCyclic(const std::vector<double>& cornerPoly1, const std::vector<dou
 		bNext = false;	
 		for(int i=iFirst, j = (it - cornerPoly1.begin())+1; (i < cornerPoly2.size() && i > 0) ; i += iDir, j++ ) {
 			// Walk cyclically in given direction
-			if( cornerPoly2[i] != cornerPoly1[j%cornerPoly1.size()] ) {
+			if( !(cornerPoly2[i] == cornerPoly1[j%cornerPoly1.size()]) ) {
 				bNext = true;
 				break; 
 			}
@@ -1127,7 +1136,7 @@ bool Polygon::isCongruent(const Shape &rhsShape) const {
 	// are same in some cyclic order.
 	
 	// Generate corner measure for both polygons
-	std::vector<double> cornerPoly1, cornerPoly2;
+	std::vector<Point> cornerPoly1, cornerPoly2;
 	genCornerPoly(*this, cornerPoly1);
 	genCornerPoly(*pS2, cornerPoly2);
 	

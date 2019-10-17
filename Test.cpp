@@ -436,14 +436,30 @@ void TestGeom() {
 	cout << "Are they congruent?: " << p13.isCongruent(polyRecon) << endl;
 	
 	Polygon p14({{0,0,0}, {2,0,0}, {2,4,0}, {0,4,0}}), p15({{0,0,0}, {4,0,0}, {4,2,0}, {0,2,0}}),
+	        p14_1({{0,0,0}, {4,0,0}, {4,4,0}, {0,4,0}}),
 	        p16({{0,0,0}, {4,0,0}, {0,3,0}}), p17({{0,0,0}, {0,3,0}, {-4,0,0}}),
 			p18({{2,0,0}, {7,0,0}, {9,2,0}, {2,4,0}}), p19({{0,4,0}, {7,6,0}, {5,8,0}, {0,8,0}}),
-			p20({{9.5,1.5,0}, {13,8,0}, {6,8,0}, {8,4,0}});
+			p20({{9.5,1.5,0}, {13,8,0}, {6,8,0}, {8,4,0}}),
+			p21({{0,0,0}, {4,0,0}, {5,1,0}, {1,1,0}}), p22({{0,0,0}, {2,0,0}, {4,2,0}, {2,2,0}}),
+			p23({{0,0,0}, {1,0,0}, {1,1,0}, {2,1,0}, {0,2,0}}), p24({{1,0,0}, {2,0,0},{2,2,0}, {0,1,0}, {1,1,0}}),
+			p25({{0,0,0}, {2,0,0}, {2,1,0}, {1,1,0}, {1,3,0}, {0,3,0}}),
+			p26({{-1,0,0}, {0,0,0}, {0,3,0}, {-2,3,0}, {-2,2,0}, {-1,2,0}}),
+			p27({{-1,0,0}, {0,0,0}, {0,2,0}, {-2,2,0}, {-2,1,0}, {-1,1,0}});
+			
+			
 	
 	cout << endl << p14 << " : " << p15 << endl;
 	cout << "Are the equal? : " << (p14 == p15) << endl;
 	cout << "Are they congruent? : " << p14.isCongruent(p15) << endl;
-
+	
+	cout << endl << p14 << " : " << p14_1 << endl;
+	cout << "Are the equal? : " << (p14 == p14_1) << endl;
+	cout << "Are they congruent? : " << p14.isCongruent(p14_1) << endl;
+	
+	cout << endl << p21 << " : " << p22 << endl;
+	cout << "Are the equal? : " << (p21 == p22) << endl;
+	cout << "Are they congruent? : " << p21.isCongruent(p22) << endl;
+	
 	cout << endl << p16 << " : " << p17 << endl;
 	cout << "Are the equal? : " << (p16 == p17) << endl;
 	cout << "Are they congruent? : " << p16.isCongruent(p17) << endl;
@@ -455,6 +471,26 @@ void TestGeom() {
 	cout << endl << p18 << " : " << p20 << endl;
 	cout << "Are the equal? : " << (p18 == p20) << endl;
 	cout << "Are they congruent? : " << p18.isCongruent(p20) << endl;
+	
+	cout << endl << p23 << " : " << p24 << endl;
+	cout << "Are the equal? : " << (p23 == p24) << endl;
+	cout << "Are they congruent? : " << p23.isCongruent(p24) << endl;
+	
+	p24.genTriangles(vecTri);
+	cout << endl << p24 << " triangulation is : "; PRINT_TRI(vecTri);
+	GEN_TRI(p24, vecTri, vecTriPnts);
+	polyRecon = Polygon(vecTriPnts);
+	cout << "Reconstructed polygon from triangles is: " << polyRecon << endl;
+	cout << "Does reconstructed polygon match original? : " << (p24 == polyRecon) << endl;
+	cout << "Are they congruent?: " << p24.isCongruent(polyRecon) << endl;	
+	
+	cout << endl << p25 << " : " << p26 << endl;
+	cout << "Are the equal? : " << (p25 == p26) << endl;
+	cout << "Are they congruent? : " << p25.isCongruent(p26) << endl;
+	
+	cout << endl << p25 << " : " << p27 << endl;
+	cout << "Are the equal? : " << (p25 == p27) << endl;
+	cout << "Are they congruent? : " << p25.isCongruent(p27) << endl;
 }
 
 
