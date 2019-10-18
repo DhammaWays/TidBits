@@ -276,7 +276,15 @@ void TestStr() {
 	std::swap(vecTriPnts.front(), vecTriPnts.back()); \
 	std::swap(vecTriPnts.front(), vecTriPnts[vecTri.size()/2]); \
 	std::swap(vecTriPnts.back(), vecTriPnts[vecTri.size()/3]);
-
+	
+double areaFromTri(const std::vector<std::tuple<Point,Point,Point>>& vecTriPnts) {
+	double area = 0;
+	for(auto& tri: vecTriPnts) {
+		area += Polygon({std::get<0>(tri), std::get<1>(tri), std::get<2>(tri)}).Area();
+	}
+	
+	return area;
+}
 
 void TestGeom() {
     std::array<double, 3> arVec = {0, 0, 1};
@@ -394,6 +402,7 @@ void TestGeom() {
 	cout << "Reconstructed polygon from triangles is: " << polyRecon << endl;
 	cout << "Does reconstructed polygon match original? : " << (p5 == polyRecon) << endl;
 	cout << "Are they congruent?: " << p5.isCongruent(polyRecon) << endl;
+	cout << "Polygon area = " << p5.Area() << ", Sum of area of all triangles = " << areaFromTri(vecTriPnts) << endl;
 	
 	p6.genTriangles(vecTri);
 	cout << endl << p6 << " triangulation is : "; PRINT_TRI(vecTri);
@@ -402,6 +411,7 @@ void TestGeom() {
 	cout << "Reconstructed polygon from triangles is: " << polyRecon << endl;
 	cout << "Does reconstructed polygon match original? : " << (p6 == polyRecon) << endl;
 	cout << "Are they congruent?: " << p6.isCongruent(polyRecon) << endl;
+	cout << "Polygon area = " << p6.Area() << ", Sum of area of all triangles = " << areaFromTri(vecTriPnts) << endl;
 	
 	p10.genTriangles(vecTri);
 	cout << endl << p10 << " triangulation is : "; PRINT_TRI(vecTri);
@@ -410,6 +420,7 @@ void TestGeom() {
 	cout << "Reconstructed polygon from triangles is: " << polyRecon << endl;
 	cout << "Does reconstructed polygon match original? : " << (p10 == polyRecon) << endl;
 	cout << "Are they congruent?: " << p10.isCongruent(polyRecon) << endl;
+	cout << "Polygon area = " << p10.Area() << ", Sum of area of all triangles = " << areaFromTri(vecTriPnts) << endl;
 	
 	p11.genTriangles(vecTri);
 	cout << endl << p11 << " triangulation is : "; PRINT_TRI(vecTri);
@@ -418,6 +429,7 @@ void TestGeom() {
 	cout << "Reconstructed polygon from triangles is: " << polyRecon << endl;
 	cout << "Does reconstructed polygon match original? : " << (p11 == polyRecon) << endl;
 	cout << "Are they congruent?: " << p11.isCongruent(polyRecon) << endl;
+	cout << "Polygon area = " << p11.Area() << ", Sum of area of all triangles = " << areaFromTri(vecTriPnts) << endl;
 	
 	p12.genTriangles(vecTri);
 	cout << endl << p12 << " triangulation is : "; PRINT_TRI(vecTri);
@@ -425,7 +437,7 @@ void TestGeom() {
 	polyRecon = Polygon(vecTriPnts);
 	cout << "Reconstructed polygon from triangles is: " << polyRecon << endl;
 	cout << "Does reconstructed polygon match original? : " << (p12 == polyRecon) << endl;
-	cout << "Are they congruent?: " << p12.isCongruent(polyRecon) << endl;
+	cout << "Polygon area = " << p12.Area() << ", Sum of area of all triangles = " << areaFromTri(vecTriPnts) << endl;
 	
 	p13.genTriangles(vecTri);
 	cout << endl << p13 << " triangulation is : "; PRINT_TRI(vecTri);
@@ -434,12 +446,13 @@ void TestGeom() {
 	cout << "Reconstructed polygon from triangles is: " << polyRecon << endl;
 	cout << "Does reconstructed polygon match original? : " << (p13 == polyRecon) << endl;
 	cout << "Are they congruent?: " << p13.isCongruent(polyRecon) << endl;
+	cout << "Polygon area = " << p13.Area() << ", Sum of area of all triangles = " << areaFromTri(vecTriPnts) << endl;
 	
 	Polygon p14({{0,0,0}, {2,0,0}, {2,4,0}, {0,4,0}}), p15({{0,0,0}, {4,0,0}, {4,2,0}, {0,2,0}}),
 	        p14_1({{0,0,0}, {4,0,0}, {4,4,0}, {0,4,0}}),
 	        p16({{0,0,0}, {4,0,0}, {0,3,0}}), p17({{0,0,0}, {0,3,0}, {-4,0,0}}),
 			p18({{2,0,0}, {7,0,0}, {9,2,0}, {2,4,0}}), p19({{0,4,0}, {7,6,0}, {5,8,0}, {0,8,0}}),
-			p20({{9.5,1.5,0}, {13,8,0}, {6,8,0}, {8,4,0}}),
+			p20({{9.5,2,0}, {12,8,0}, {6,8,0}, {8,4,0}}),
 			p21({{0,0,0}, {4,0,0}, {5,1,0}, {1,1,0}}), p22({{0,0,0}, {2,0,0}, {4,2,0}, {2,2,0}}),
 			p23({{0,0,0}, {1,0,0}, {1,1,0}, {2,1,0}, {0,2,0}}), p24({{1,0,0}, {2,0,0},{2,2,0}, {0,1,0}, {1,1,0}}),
 			p25({{0,0,0}, {2,0,0}, {2,1,0}, {1,1,0}, {1,3,0}, {0,3,0}}),
@@ -471,6 +484,7 @@ void TestGeom() {
 	cout << endl << p18 << " : " << p20 << endl;
 	cout << "Are the equal? : " << (p18 == p20) << endl;
 	cout << "Are they congruent? : " << p18.isCongruent(p20) << endl;
+	cout << "Are their areas same: " << p18.Area() << " == " << p20.Area() << endl;
 	
 	cout << endl << p23 << " : " << p24 << endl;
 	cout << "Are the equal? : " << (p23 == p24) << endl;
@@ -491,6 +505,18 @@ void TestGeom() {
 	cout << endl << p25 << " : " << p27 << endl;
 	cout << "Are the equal? : " << (p25 == p27) << endl;
 	cout << "Are they congruent? : " << p25.isCongruent(p27) << endl;
+	
+	Polygon p28({{2,1,0}, {4,1,0}, {4,2,0}, {3,3,0}, {4,5,0}, {2,3,0}, {0,5,0},  {0,3,0}, {-1,3,0}, {0,2,0}});
+	Polygon p29({{4,5,0}, {-1,3,0}, {4,2,0}, {0,3,0}, {2,1,0}, {0,2,0}, {4,1,0}, {0,5,0}, {3,3,0}, {2,3,0}}, true);
+	Polygon p30(p25.mVertices, true), p31(p23.mVertices,true), p32(p11.mVertices, true);
+	Polygon p33({{0,-1,0}, {5,2,0}, {2,1,0}, {0,5,0}, {-2,1,0}, {-5,2,0}}),
+	        p34({{-5,2,0}, {5,2,0}, {-2,1,0}, {0,-1,0}, {0,5,0}, {2,1,0}}, true);
+	cout << endl << "Constructed from random order points: " << p29 << " == " << p28 << " : " << (p29 == p28) << endl;
+	cout << endl << "Constructed from random order points: " << p30 << " == " << p25 << " : " << (p30 == p25) << endl;
+	cout << endl << "Constructed from random order points: " << p31 << " == " << p23 << " : " << (p31 == p23) << endl;
+	cout << endl << "Constructed from random order points: " << p32 << " == " << p11 << " : " << (p32 == p11) << endl;
+	cout << endl << "Constructed from random order points: " << p34 << " == " << p33 << " : " << (p34 == p33) << endl;
+
 }
 
 

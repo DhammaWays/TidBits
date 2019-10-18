@@ -184,7 +184,11 @@ public: // Data
 
 class Polygon: public Shape {
 public:
-	Polygon(const std::vector<Point>& vertices); // Vertices should be given in anti-clockwise order
+	// Polygon vertices can be given either in anti-clockwise order or random order (default is CCW order)
+	// For random vertices order, a simple closed polygon is constructed in increasing angle from leftmost bottommost vertex
+	Polygon(const std::vector<Point>& vertices, const bool randomOrder=false); // Vertices should be given in anti-clockwise order
+	
+	// Form the polygon with its set of triangles (typically available for some triangualtion)
 	Polygon(const std::vector<std::tuple<Point,Point,Point>>& vecTri); // Construct the shape from list of connected triangles
 	
 	// Interface

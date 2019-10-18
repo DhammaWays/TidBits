@@ -494,7 +494,53 @@ std::ostream& Line::print(std::ostream &o) const {
 
 // Polygon
 
-Polygon::Polygon(const std::vector<Point>& vertices) : mVertices(vertices) {}
+// Return left bottommost vertex
+int getBottomMostVertex(const std::vector<Point>& vertices) {
+	int iBottom = 0;
+	for(int i=1; i < vertices.size(); i++) { // in case of same bottom, pick leftmost
+		if( (vertices[i].y < vertices[iBottom].y) || 
+		    (vertices[i].y == vertices[iBottom].y && vertices[i].x < vertices[iBottom].x) ) 
+			iBottom = i;
+	}
+	
+	return iBottom;
+}
+
+// Return true if p1 comes first (before p2) when going from x-axis in anti-clockwise direction
+// 
+int compareAngle(const Point& p0, const Point& p1, const Point& p2) {
+	// We are checking if edge p0-p1 is to the left of edge p0-p2 in anticlockwise direction
+	Vec e1(p0, p1), e2(p0, p2);
+	double angleMeasure = e1.cross(e2).z;
+	if( angleMeasure == 0 ) // In case of same angle, vertex closer to bottommost point is picked
+		return e1.magsqr() <= e2.magsqr();
+		
+	return angleMeasure >= 0; // vertex which is left to other (i.e. form anticlock turn w.r.t other vertex edge)
+}
+
+// Polygon vertices can be given either in anti-clockwise order or random order (default is CCW order)
+// For random vertices order, a simple closed polygon is constructed in increasing angle from leftmost bottommost vertex
+Polygon::Polygon(const std::vector<Point>& vertices, const bool randomOrder) : mVertices(vertices) {
+	if( randomOrder ) {
+		// Construct a simple closed path polygon 
+		// Algo:
+		// 1) Find the bottommost point
+		// 2) For every other vertex, calculate its angle from bottommost vertex w.r.t to x-axis
+		// 3) Connect the vertices in the increasing order of their angle (natural anti-clock order)
+		//    -For same angle pick them in increasing order of their distance from bottom most vertex
+		//	  -We do not need actual angle, just measure of orientation (like cross product w.r.t bottommost point) would do
+		
+		// Fidn leftmost bottom most vertex		
+		int iBottom = getBottomMostVertex(mVertices);
+		Point p0(mVertices[iBottom]);
+		std::swap(mVertices[0], mVertices[iBottom]);
+		
+		// Sort the rest of vertex array in order of their angle from x-axis
+		std::sort(mVertices.begin()+1, mVertices.end(), 
+		          [&p0](const Point& p1, const Point& p2){ return compareAngle(p0, p1, p2);});
+		
+	}
+}
 
 typedef std::pair<Point, Point> EDGE;
 
@@ -1049,6 +1095,7 @@ bool Polygon::operator==(const Shape &rhsShape) const {
 }
 
 // Generate corner measure of given polygon
+// Our corner measure should be proxy to comparing two edges length and their interior angle
 void genCornerPoly(const Polygon& poly, std::vector<Point>& cornerPoly) {
 	const int N = poly.mVertices.size();
 	Point cornerMeasure;
@@ -1057,8 +1104,8 @@ void genCornerPoly(const Polygon& poly, std::vector<Point>& cornerPoly) {
 		Vec e1(poly.mVertices[i%N], poly.mVertices[(i+1) % N]);
 		Vec e2(poly.mVertices[i%N], poly.mVertices[(i-1) % N]);
 		// Our corner measure is cross product between two edges and their individual magnitude
-		// We are storing edge magnitude in sorterd order to make it works whichever order they come in
-		cornerMeasure.z = e1.cross(e2).z; // e1.dot(e2) is not effective when angel is 90 deg between them!
+		// We are storing edge magnitude in sorterd order to make it work whichever order they come in
+		cornerMeasure.z = e1.cross(e2).z; // e1.dot(e2) is not effective when angle is 90 deg between them!
 		cornerMeasure.x = e1.magsqr();
 		cornerMeasure.y = e2.magsqr();
 		if( cornerMeasure.x > cornerMeasure.y ) // swap them, keep minimum first
@@ -1108,12 +1155,8 @@ bool Polygon::isCongruent(const Shape &rhsShape) const {
 	// b) Their sides are same size
 	// c) Their inetrior angles are same
 	
-	// For our purpose we do not need to calculat exact size or angle.
-	// We can use exact dot product between two edges for checking both if two edges are of
-	// same size and same angle.
-	// At same corner of both polygon P1, P2:
-	// Let us say edge e1,e2 is in P1, and edge e1', e2' is in P2, then
-	// e1.e2 == e1'.e2' for that corner to match
+	// For our purpose we do not need to calculate exact size or angle.
+	// We can use some sort of corner measure to compare if two corners are same.
 	
 	if( typeid(rhsShape) != typeid(Polygon) ) 
 			return false;
@@ -1131,8 +1174,8 @@ bool Polygon::isCongruent(const Shape &rhsShape) const {
 	else if( mVertices.size() != pS2->mVertices.size() ) // Even their vertex count do not match!
 		return false;
 		
-	// Need to do actual congrunecy test
-	// We will build a corner measure (in our case dot product) and then compare if these measures
+	// Need to do actual congruency test
+	// We will build a corner measure and then compare if these measures
 	// are same in some cyclic order.
 	
 	// Generate corner measure for both polygons
