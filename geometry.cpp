@@ -6,6 +6,7 @@
 #include <iostream>
 #include <list>
 #include <algorithm>
+#include <numeric>
 
 #include "geometry.h"
 #include "numbers.h"
@@ -1192,3 +1193,114 @@ bool Polygon::isCongruent(const Shape &rhsShape) const {
 	// No match found in either direction; two polygons are not congruent!
 	return false;
 }
+
+struct Space {
+	double x,y;
+	double w,h;
+};
+
+// Pack given rectangles (w,h) into a compact rectangle (output: W, H) and their position (index of rect, x, y)
+int packRect(double& W, double& H, std::vector<std::pair<int, Point>>& packedRects, const std::vector<Rect>& rects) {
+	// We use simple algo: partioning output space into bins by splitting appropriately.
+	// 1. Sort the input rectangles in decreasing order of their heights
+	// 2. Initialize output rect space to accomodate at least maximum width rect
+	// 3. For each input rect in sorted rects: 
+	//		-Place it in smallest space bin possible
+	//      -If found space is perfect match, remove this bin
+	//		-If found space matches rect height/width, adjust its free space accoridingly
+	//		-Otherwise split the space (new and adjust current one)
+	
+	// Create a sorted index on given rectangles in decreasing order of their heights
+	// for same heights rectangles, prefer larger width rectangle
+    std::vector<int> sortedRectIdx(rects.size());
+  	std::iota(sortedRectIdx.begin(), sortedRectIdx.end(), 0);
+  	std::sort(sortedRectIdx.begin(), sortedRectIdx.end(),
+       		  [&rects](const int i1, const int i2) 
+			  {return (rects[i1].h == rects[i2].h ? rects[i1].w > rects[i2].w : rects[i1].h > rects[i2].h);});
+			  
+	// Find maximum width among given rectangles
+	double maxW = 0, totalH = 0, area = 0;
+	for(const auto& r: rects) {
+		if( maxW < r.w ) maxW = r.w;
+		totalH += r.h;
+		area += r.w * r.h;
+	}
+	
+	// Initialize space to go for squarish fit: diagonal length of square containing total area
+	W = MAX(maxW, (int)(sqrt(area)+0.5)); H = totalH;		  
+	std::vector<Space> spaces;
+	spaces.push_back({x:0, y:0, w:W, h:H});
+	packedRects.clear();
+	
+	for(const auto& r: sortedRectIdx) {
+		// Start looking foe place to fit this rect
+		// We look for in reverse order to first match with small space
+		for(int i=spaces.size()-1; i >= 0; i--) {
+			// Do we even have fit?
+			if( rects[r].w > spaces[i].w || rects[r].h > spaces[i].h )
+				continue;
+				
+			// Found a fit, add the rect to space's top left corner
+		    // |-------|-------|
+		    // |  rect |       |
+		    // |_______|       |
+		    // |         space |
+		    // |_______________|
+			packedRects.push_back(std::make_pair(r, Point({spaces[i].x, spaces[i].y, 0})));
+			
+			// Adjust spaces, split if necessary
+			
+			if( rects[r].w == spaces[i].w && rects[r].h == spaces[i].h ) { // Fits perfectly, remove it
+				spaces[i] = spaces.back();
+        		spaces.pop_back();				
+			}
+			else if( rects[r].h == spaces[i].h ) { // Fits horizontally, adjust space
+			    // |-------|---------------|
+		        // |  rect | updated space |
+		        // |_______|_______________|
+		        spaces[i].x += rects[r].w;
+		        spaces[i].w -= rects[r].w;				
+			}
+			else if( rects[r].w == spaces[i].w ) { // Fits vertically, adjust space 
+		        // |---------------|
+		        // |      rect     |
+		        // |_______________|
+		        // | updated space |
+		        // |_______________|
+		        spaces[i].y += rects[r].h;
+        		spaces[i].h -= rects[r].h;							
+			}
+			else { // Need to split
+		        // |-------|-----------|
+		        // |  rect | new space |
+		        // |_______|___________|
+		        // | updated space     |
+		        // |___________________|
+				
+				// Add new space
+		        spaces.push_back({x: spaces[i].x + rects[r].w, y: spaces[i].y, w: spaces[i].w - rects[r].w, h: rects[r].h});
+
+				// Updated existing space
+		        spaces[i].y += rects[r].h;
+		        spaces[i].h -= rects[r].h;				
+			}
+			
+			// Found the space
+			break;
+		}
+	}
+	
+	// Did we pack all rects?
+	//W = spaces[0].w; H = spaces[0].y;
+	
+	// Our height is topmost space vertical position as it would be first space still remaining
+	// since w echose large vertical space initially.
+	// Our width is reamining rightmost space horizontal position
+	W = 0; H = spaces[0].y;
+	for(const auto& s: spaces) {
+		if( W < s.x) W = s.x;
+	}
+	
+	return (packedRects.size());		
+}
+

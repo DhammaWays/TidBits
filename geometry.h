@@ -205,7 +205,7 @@ public:
 	
 	// Shape specific 
 	
-	// Generate triangles from the shape (triangulate), output is tupl eof triangle vertices index into polygon points
+	// Generate triangles from the shape (triangulate), output is tuple of triangle vertices index into polygon points
 	virtual int genTriangles(std::vector<std::tuple<int,int,int>>& vecTri) const;  
 		
 	// Output function
@@ -215,6 +215,13 @@ public:
 public: // Data 
 	std::vector<Point> mVertices;
 };
+
+// Pack given rectangles (w,h) into a compact rectangle (output: W, H) and their position (index of rect, x, y)
+struct Rect {
+	double w, h;
+};
+
+int packRect(double& W, double& H, std::vector<std::pair<int, Point>>& packedRects, const std::vector<Rect>& rects);
 
 
 #endif
