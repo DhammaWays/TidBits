@@ -1199,8 +1199,102 @@ struct Space {
 	double w,h;
 };
 
-// Pack given rectangles (w,h) into a compact rectangle (output: W, H) and their position (index of rect, x, y)
-int packRect(double& W, double& H, std::vector<std::pair<int, Point>>& packedRects, const std::vector<Rect>& rects) {
+void splitSpace(std::vector<Space>& spaces, const int i, const Rect& rect) {
+		// Adjust spaces, split if necessary
+		Space space = spaces[i];
+		
+		if( rect.w == space.w && rect.h == space.h ) { // Fits perfectly, remove it
+			space = spaces.back();
+    		spaces.pop_back();				
+		}
+		else if( rect.h == space.h ) { // Fits horizontally, adjust space
+		    // |-------|---------------|
+	        // |  rect | updated space |
+	        // |_______|_______________|
+	        space.x += rect.w;
+	        space.w -= rect.w;				
+		}
+		else if( rect.w == space.w ) { // Fits vertically, adjust space 
+	        // |---------------|
+	        // |      rect     |
+	        // |_______________|
+	        // | updated space |
+	        // |_______________|
+	        space.y += rect.h;
+    		space.h -= rect.h;							
+		}
+		else { // Need to split
+	        // |-------|-----------|
+	        // |  rect | new space |
+	        // |_______|___________|
+	        // | updated space     |
+	        // |___________________|
+			
+			// Add new space
+	        spaces.push_back({x: space.x + rect.w, y: space.y, w: space.w - rect.w, h: rect.h});
+			//space = spaces[i]; // Container element refernce can change after another elmeent is added!
+
+			// Update existing space
+	        space.y += rect.h;
+	        space.h -= rect.h;				
+		}
+		
+		// Update the original spaces
+		spaces[i] = space;	
+}
+
+int findSpace(const std::vector<Space>& spaces, const Rect& rect) {
+	// Look for space to fit given rectangle in reverse order in spaces (we find smallest first!)
+	for(int i=spaces.size()-1; i >= 0; i--) {
+		// Do we have fit?
+		if( rect.w <= spaces[i].w && rect.h <= spaces[i].h ) { // Found the space				
+			return i;
+		}			
+	}
+	
+	// If we could not find anything!
+	return 0;			
+}
+
+int findLeftmostSpace(const std::vector<Space>& spaces, const Rect& rect) {
+	// Look for space to fit given rectangle in reverse order in spaces (we find smallest first!)
+	
+	if( spaces.size() <= 1 ) // trivial, no need to search
+		return 0;
+		
+	auto itFound = spaces.rbegin();
+	auto itFirst = --(spaces.rend()); //reverse iterator end points to just past first element!
+	auto itLeftFound = itFound;
+	
+	// Search in reverse
+	itFound = std::find_if(itFound, spaces.rend(), 
+							[&rect](const Space& s){ return (rect.w <= s.w && rect.h <= s.h); });
+	itLeftFound = itFound;
+	
+	// See if we can find another match which is leftmost	
+	while( itFound != itFirst && itFound != spaces.rend() ) {
+		// Serach in reverse: our next range start is past previous found: ++itFound (reverse iterator)
+		itFound = std::find_if((++itFound), spaces.rend(), 
+							[&rect](const Space& s){ return (rect.w <= s.w && rect.h <= s.h); });
+							
+		if( itFound != itFirst && (*itFound).x < (*itLeftFound).x ) { // Found a new lower left
+			itLeftFound = itFound;			
+		}									
+	}
+																				
+	if( itLeftFound != spaces.rend() ) { // convert it into index from top
+		return (itFirst - itLeftFound); // reverse iterator: They increment in reverse direction!
+	}
+	else {
+		std::cout << "Error: Not found any place for rectangle {" << rect.w << ", " << rect.h << "}" << std::endl;
+		return 0;
+	}	
+}
+
+// Pack given rectangles (w,h) into a compact rectangle sheet (input/output: W, H) and their positions
+// (index of rect, x, y, flip status).
+// Returns packing density (ratio of packed area to overall output sheet area)
+double packRect(std::vector<std::tuple<int, Point, bool>>& packedRects, double& W, double& H,const std::vector<Rect>& rects, const bool flipRect) {
 	// We use simple algo: partioning output space into bins by splitting appropriately.
 	// 1. Sort the input rectangles in decreasing order of their heights
 	// 2. Initialize output rect space to accomodate at least maximum width rect
@@ -1226,81 +1320,40 @@ int packRect(double& W, double& H, std::vector<std::pair<int, Point>>& packedRec
 		area += r.w * r.h;
 	}
 	
-	// Initialize space to go for squarish fit: diagonal length of square containing total area
-	W = MAX(maxW, (int)(sqrt(area)+0.5)); H = totalH;		  
+	// Initialize space to go for squarish fit: side of square containing total area (bit larger)
+	W = MAX(maxW, (int)(sqrt(area*1.05)+0.5)); H = totalH;		  
 	std::vector<Space> spaces;
 	spaces.push_back({x:0, y:0, w:W, h:H});
 	packedRects.clear();
 	
 	for(const auto& r: sortedRectIdx) {
-		// Start looking foe place to fit this rect
-		// We look for in reverse order to first match with small space
-		for(int i=spaces.size()-1; i >= 0; i--) {
-			// Do we even have fit?
-			if( rects[r].w > spaces[i].w || rects[r].h > spaces[i].h )
-				continue;
-				
-			// Found a fit, add the rect to space's top left corner
-		    // |-------|-------|
-		    // |  rect |       |
-		    // |_______|       |
-		    // |         space |
-		    // |_______________|
-			packedRects.push_back(std::make_pair(r, Point({spaces[i].x, spaces[i].y, 0})));
-			
-			// Adjust spaces, split if necessary
-			
-			if( rects[r].w == spaces[i].w && rects[r].h == spaces[i].h ) { // Fits perfectly, remove it
-				spaces[i] = spaces.back();
-        		spaces.pop_back();				
-			}
-			else if( rects[r].h == spaces[i].h ) { // Fits horizontally, adjust space
-			    // |-------|---------------|
-		        // |  rect | updated space |
-		        // |_______|_______________|
-		        spaces[i].x += rects[r].w;
-		        spaces[i].w -= rects[r].w;				
-			}
-			else if( rects[r].w == spaces[i].w ) { // Fits vertically, adjust space 
-		        // |---------------|
-		        // |      rect     |
-		        // |_______________|
-		        // | updated space |
-		        // |_______________|
-		        spaces[i].y += rects[r].h;
-        		spaces[i].h -= rects[r].h;							
-			}
-			else { // Need to split
-		        // |-------|-----------|
-		        // |  rect | new space |
-		        // |_______|___________|
-		        // | updated space     |
-		        // |___________________|
-				
-				// Add new space
-		        spaces.push_back({x: spaces[i].x + rects[r].w, y: spaces[i].y, w: spaces[i].w - rects[r].w, h: rects[r].h});
-
-				// Updated existing space
-		        spaces[i].y += rects[r].h;
-		        spaces[i].h -= rects[r].h;				
-			}
-			
-			// Found the space
-			break;
-		}
+		// Looking for place to fit this rect
+		// We look in reverse order to first match with small space
+		// int i = findSpace(spaces, rects[r]);
+		
+		int i = findLeftmostSpace(spaces, rects[r]);
+		packedRects.push_back(std::make_tuple(r, Point({spaces[i].x, spaces[i].y, 0}), false));				
+		splitSpace(spaces, i, rects[r]);						
 	}
 	
 	// Did we pack all rects?
-	//W = spaces[0].w; H = spaces[0].y;
+	assert( packedRects.size() == rects.size() );
+	
 	
 	// Our height is topmost space vertical position as it would be first space still remaining
-	// since w echose large vertical space initially.
-	// Our width is reamining rightmost space horizontal position
+	// since we chose large vertical space initially.
+	// Our width is rightmost rect position
+	// W = spaces[0].w; H = spaces[0].y;
+	int i;
+	Point loc;	
 	W = 0; H = spaces[0].y;
-	for(const auto& s: spaces) {
-		if( W < s.x) W = s.x;
+	// Find rightmost edge among our placed rects
+	for(const auto& r: packedRects) {
+		std::tie(i, loc, std::ignore) = r;
+		if( W < (loc.x + rects[i].w)) W = loc.x + rects[i].w;
 	}
 	
-	return (packedRects.size());		
+	// return packing density: What % of output rectangle sheet (W*H) was packed with input rectangles
+	return (area/(W*H));		
 }
 

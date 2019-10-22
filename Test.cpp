@@ -517,18 +517,18 @@ void TestGeom() {
 	cout << endl << "Constructed from random order points: " << p32 << " == " << p11 << " : " << (p32 == p11) << endl;
 	cout << endl << "Constructed from random order points: " << p34 << " == " << p33 << " : " << (p34 == p33) << endl;
 
-	double rectAry[][2] = {{7,7}, {10,20}, {3,5},{5,5}, {5,5}, {3,5}, {7,3}};
-	std::vector<Rect> rects({{7,7}, {10,20}, {3,5},{5,5}, {5,5}, {3,5}, {7,3}});
-	std::vector<std::pair<int, Point>> packedRects;
-	double W, H;
+	double rectAry[][2] = {{7,5}, {10,15}, {3,5},{5,5}, {5,7}, {3,5}, {7,3}, {6,5}, {2, 5}};
+	std::vector<Rect> rects({{7,5}, {10,15}, {3,5},{5,5}, {5,7}, {3,5}, {7,3}, {6,5}, {2,5}});
+	std::vector<std::tuple<int, Point, bool>> packedRects;
+	double W, H, density;
 	
-    packRect(W, H, packedRects, rects);
+    density = packRect(packedRects, W, H, rects);
 	cout << endl << "Packing rectangles..." << endl;
-	cout << endl << "W: " << W << " H: " << H << endl;
+	cout << endl << "W: " << W << " H: " << H << " Density: " << density << endl;
 	int idx;
 	Point loc;
 	for(auto e: packedRects) {
-		std::tie(idx, loc) = e;
+		std::tie(idx, loc, std::ignore) = e;
 		PRINT_ARRAY(rectAry[idx]);
 		cout << "x: " << loc.x << " y: " << loc.y << endl;
 	}

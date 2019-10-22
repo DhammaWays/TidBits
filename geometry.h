@@ -216,12 +216,15 @@ public: // Data
 	std::vector<Point> mVertices;
 };
 
-// Pack given rectangles (w,h) into a compact rectangle (output: W, H) and their position (index of rect, x, y)
+// Pack given rectangles (w,h) into a compact rectangle sheet (W, H)
 struct Rect {
 	double w, h;
 };
 
-int packRect(double& W, double& H, std::vector<std::pair<int, Point>>& packedRects, const std::vector<Rect>& rects);
-
+// Pack given rectangles (w,h) into a compact rectangle sheet (input/output: W, H) and
+// outputs their positions (index of rect, x, y, flip status).
+// Returns packing density (ratio of packed area to overall output sheet area)
+double packRect(std::vector<std::tuple<int, Point, bool>>& packedRects, 
+				double& W, double& H, const std::vector<Rect>& rects, const bool flipRect=false);
 
 #endif
