@@ -277,6 +277,13 @@ void TestStr() {
 	std::swap(vecTriPnts.front(), vecTriPnts[vecTri.size()/2]); \
 	std::swap(vecTriPnts.back(), vecTriPnts[vecTri.size()/3]);
 	
+#define PRINT_RECTS(rects, idx, flipped) \
+	if(!(flipped)) \
+		cout << "[" << (rects)[idx].w << ", " << (rects)[idx].h << "] "; \
+	else \
+		cout << "[" << (rects)[idx].h << ", " << (rects)[idx].w << "] "; 
+	
+	
 double areaFromTri(const std::vector<std::tuple<Point,Point,Point>>& vecTriPnts) {
 	double area = 0;
 	for(auto& tri: vecTriPnts) {
@@ -517,19 +524,29 @@ void TestGeom() {
 	cout << endl << "Constructed from random order points: " << p32 << " == " << p11 << " : " << (p32 == p11) << endl;
 	cout << endl << "Constructed from random order points: " << p34 << " == " << p33 << " : " << (p34 == p33) << endl;
 
-	double rectAry[][2] = {{7,5}, {10,15}, {3,5},{5,5}, {5,7}, {3,5}, {7,3}, {6,5}, {2, 5}};
-	std::vector<Rect> rects({{7,5}, {10,15}, {3,5},{5,5}, {5,7}, {3,5}, {7,3}, {6,5}, {2,5}});
+	std::vector<Rect> rects({{7,5}, {10,15}, {3,5},{5,5}, {5,7}, {3,5}, {7,3}, {6,5}, {5,2}});
+	std::vector<Rect> rects1({{5,7}, {10,15}, {3,5}, {5,5}, {5,7}, {3,5}, {3,7}, {5,6}, {5,2}});
 	std::vector<std::tuple<int, Point, bool>> packedRects;
 	double W, H, density;
+	bool flipped;
+
+	cout << endl << "Packing rectangles..." << endl;
 	
     density = packRect(packedRects, W, H, rects);
-	cout << endl << "Packing rectangles..." << endl;
 	cout << endl << "W: " << W << " H: " << H << " Density: " << density << endl;
 	int idx;
 	Point loc;
 	for(auto e: packedRects) {
-		std::tie(idx, loc, std::ignore) = e;
-		PRINT_ARRAY(rectAry[idx]);
+		std::tie(idx, loc, flipped) = e;
+		PRINT_RECTS(rects, idx, flipped);
+		cout << "x: " << loc.x << " y: " << loc.y << endl;
+	}
+	
+	density = packRect(packedRects, W, H, rects1, true);
+	cout << endl << "W: " << W << " H: " << H << " Density: " << density << endl;
+	for(auto e: packedRects) {
+		std::tie(idx, loc, flipped) = e;
+		PRINT_RECTS(rects1, idx, flipped);
 		cout << "x: " << loc.x << " y: " << loc.y << endl;
 	}
 

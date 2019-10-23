@@ -1199,6 +1199,17 @@ struct Space {
 	double w,h;
 };
 
+// Checks if this rect will fit in given space
+bool fitsSpace(std::vector<Space>& spaces, const int i, const Rect& rect) {
+		return (rect.w <= spaces[i].w && rect.h <= spaces[i].h);	
+}
+
+
+// Checks if this rect will end up creating new space
+bool newSpace(std::vector<Space>& spaces, const int i, const Rect& rect) {
+		return (rect.w != spaces[i].w && rect.h != spaces[i].h);	
+}
+
 void splitSpace(std::vector<Space>& spaces, const int i, const Rect& rect) {
 		// Adjust spaces, split if necessary
 		Space space = spaces[i];
@@ -1321,20 +1332,49 @@ double packRect(std::vector<std::tuple<int, Point, bool>>& packedRects, double& 
 	}
 	
 	// Initialize space to go for squarish fit: side of square containing total area (bit larger)
-	W = MAX(maxW, (int)(sqrt(area*1.05)+0.5)); H = totalH;		  
+	W = MAX(maxW, (int)(sqrt(area*1.1)+0.5)); H = totalH;	
+	
+	Rect flippedRect, tRect;
 	std::vector<Space> spaces;
 	spaces.push_back({x:0, y:0, w:W, h:H});
 	packedRects.clear();
 	
-	for(const auto& r: sortedRectIdx) {
+	// Put in the first rect
+	int r = sortedRectIdx[0], s;
+	bool flipped = false;
+	packedRects.push_back(std::make_tuple(r, Point({spaces[0].x, spaces[0].y, 0}), false));	
+	splitSpace(spaces, 0, rects[r]);			
+	
+	// Place rest of the rectangles
+	for(int j=1; j < sortedRectIdx.size(); j++) {
 		// Looking for place to fit this rect
 		// We look in reverse order to first match with small space
 		// int i = findSpace(spaces, rects[r]);
+		r = sortedRectIdx[j];
 		
-		int i = findLeftmostSpace(spaces, rects[r]);
-		packedRects.push_back(std::make_tuple(r, Point({spaces[i].x, spaces[i].y, 0}), false));				
-		splitSpace(spaces, i, rects[r]);						
-	}
+		if( flipRect && rects[r].w < rects[r].h ) {
+			flippedRect.w = rects[r].h; flippedRect.h = rects[r].w;
+			flipped = true;
+		}
+		else {
+			flippedRect = rects[r];
+			flipped = false;
+		}
+				
+		s = findLeftmostSpace(spaces, flippedRect);	
+		
+		// We prefer orientation that does not create new space and lower right extent
+		if( flipRect && (newSpace(spaces, s, flippedRect) || flippedRect.w > flippedRect.h) ) {
+			tRect.w = flippedRect.h; tRect.h = flippedRect.w;
+			if( fitsSpace(spaces, s, tRect) && !newSpace(spaces, s, tRect) ) {
+				flippedRect = tRect;
+				flipped = !flipped;
+			}			
+		}
+		
+		packedRects.push_back(std::make_tuple(r, Point({spaces[s].x, spaces[s].y, 0}), flipped));				
+		splitSpace(spaces, s, flippedRect);
+	}						
 	
 	// Did we pack all rects?
 	assert( packedRects.size() == rects.size() );
@@ -1345,12 +1385,14 @@ double packRect(std::vector<std::tuple<int, Point, bool>>& packedRects, double& 
 	// Our width is rightmost rect position
 	// W = spaces[0].w; H = spaces[0].y;
 	int i;
-	Point loc;	
+	Point loc;
+	double rightEdge;	
 	W = 0; H = spaces[0].y;
 	// Find rightmost edge among our placed rects
 	for(const auto& r: packedRects) {
-		std::tie(i, loc, std::ignore) = r;
-		if( W < (loc.x + rects[i].w)) W = loc.x + rects[i].w;
+		std::tie(i, loc, flipped) = r;
+		rightEdge = (!flipped ? loc.x + rects[i].w : loc.x + rects[i].h);
+		if( W < rightEdge ) W = rightEdge;
 	}
 	
 	// return packing density: What % of output rectangle sheet (W*H) was packed with input rectangles
