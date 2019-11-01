@@ -221,10 +221,15 @@ struct Rect {
 	double w, h;
 };
 
-// Pack given rectangles (w,h) into a compact rectangle sheet (input/output: W, H) and
-// outputs their positions (index of rect, x, y, flip status).
+// Pack given rectangles (w,h) into a compact rectangle sheet (input/output: W, H, in case W,H is passed in as 
+// zero, it will be calculated based on heuristic) and outputs their positions (index of rect, x, y, flip status).
 // Returns packing density (ratio of packed area to overall output sheet area)
 double packRect(std::vector<std::tuple<int, Point, bool>>& packedRects, 
 				double& W, double& H, const std::vector<Rect>& rects, const bool flipRect=false);
+
+// Pack given rectangles (w,h) into a compact squarish sheet (output: W, H) and their positions
+// (index of rect, x, y, flip status).
+// Returns packing density (ratio of packed area to overall output sheet area)
+double packRectSqr(std::vector<std::tuple<int, Point, bool>>& packedRects, double& W, double& H,const std::vector<Rect>& rects, const bool flipRect=false);
 
 #endif

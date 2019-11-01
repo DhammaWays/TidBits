@@ -1,4 +1,4 @@
-CPPFLAGS ?= -std=c++11 -g
+CPPFLAGS ?= -std=c++14 -g
 
 Test : Test.o fibonacci.o numbers.o lstrings.o geometry.o sort.h numbers.h geometry.h
 	g++ $(CPPFLAGS) Test.o fibonacci.o numbers.o lstrings.o geometry.o -o Test

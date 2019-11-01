@@ -293,6 +293,18 @@ double areaFromTri(const std::vector<std::tuple<Point,Point,Point>>& vecTriPnts)
 	return area;
 }
 
+void printPackedRects(const std::vector<Rect>& rects, const std::vector<std::tuple<int, Point, bool>>& packedRects, const double& W, const double& H, const double& density) {
+	cout << endl << "W: " << W << " H: " << H << " Density: " << density << endl;
+	int idx;
+	Point loc;
+	bool flipped;
+	for(auto e: packedRects) {
+		std::tie(idx, loc, flipped) = e;
+		PRINT_RECTS(rects, idx, flipped);
+		cout << "x: " << loc.x << " y: " << loc.y << endl;
+	}
+}
+
 void TestGeom() {
     std::array<double, 3> arVec = {0, 0, 1};
 	double arV[] = {-1, 1};
@@ -526,30 +538,56 @@ void TestGeom() {
 
 	std::vector<Rect> rects({{7,5}, {10,15}, {3,5},{5,5}, {5,7}, {3,5}, {7,3}, {6,5}, {5,2}});
 	std::vector<Rect> rects1({{5,7}, {10,15}, {3,5}, {5,5}, {5,7}, {3,5}, {3,7}, {5,6}, {5,2}});
+	std::vector<Rect> rects2({{500, 200}, {250, 200}, 
+	                          {50,50}, {50,50}, {50,50}, {50,50}, {50,50},
+	                          {50,50}, {50,50}, {50,50}, {50,50}, {50,50},
+                          	  {50,50}, {50,50}, {50,50}, {50,50}, {50,50},
+	                          {50,50}, {50,50}, {50,50}, {50,50}, {50,50}});
+	std::vector<Rect> rects3({ {400,50}, {400,50}, {300,50}, {300,50}, {300,50}, {300,50}, {300,50},
+			{200,50}, {200,50}, {200,50}, {200,50}, {200,50}, {200,50}, {200,50}, {200,50}, {200,50}, {200,50},
+			{100,50}, {100,50}, {100,50}, {100,50}, {100,50}, {100,50}, {100,50}, {100,50}, {100,50}, {100,50},
+			{100,50}, {100,50}, {100,50}, {100,50}, {100,50}, {100,50}, {100,50}, {100,50}, {100,50}, {100,50},
+			{50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50},
+			{50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50},
+			{50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50},
+			{50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50} });
+	std::vector<Rect> rects4({ {400,100}, {100,400}, {400,100}, {100,400}, {400,100}, {100,400} });
+	std::vector<Rect> rects5({ 
+			{50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50},
+			{50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50}, {50,50},
+			{47,31}, {47,31}, {47,31}, {47,31}, {47,31}, {47,31}, {47,31}, {47,31}, {47,31}, {47,31},
+			{47,31}, {47,31}, {47,31}, {47,31}, {47,31}, {47,31}, {47,31}, {47,31}, {47,31}, {47,31},
+			{23,17}, {23,17}, {23,17}, {23,17}, {23,17}, {23,17}, {23,17}, {23,17}, {23,17}, {23,17},
+			{23,17}, {23,17}, {23,17}, {23,17}, {23,17}, {23,17}, {23,17}, {23,17}, {23,17}, {23,17},
+			{109,42}, {109,42}, {109,42}, {109,42}, {109,42}, {109,42}, {109,42}, {109,42}, {109,42}, {109,42},
+			{109,42}, {109,42}, {109,42}, {109,42}, {109,42}, {109,42}, {109,42}, {109,42}, {109,42}, {109,42},
+			{42,109}, {42,109}, {42,109}, {42,109}, {42,109}, {42,109}, {42,109}, {42,109}, {42,109}, {42,109},
+			{42,109}, {42,109}, {42,109}, {42,109}, {42,109}, {42,109}, {42,109}, {42,109}, {42,109}, {42,109},
+			{17,33}, {17,33}, {17,33}, {17,33}, {17,33}, {17,33}, {17,33}, {17,33}, {17,33}, {17,33},
+			{17,33}, {17,33}, {17,33}, {17,33}, {17,33}, {17,33}, {17,33}, {17,33}, {17,33}, {17,33},			 
+			 });
+			
+	auto rectsInput = {rects, rects1, rects2, rects3, rects4, rects5};
+			
 	std::vector<std::tuple<int, Point, bool>> packedRects;
-	double W, H, density;
+	double W = 0, H = 0, density;
 	bool flipped;
 
 	cout << endl << "Packing rectangles..." << endl;
 	
-    density = packRect(packedRects, W, H, rects);
-	cout << endl << "W: " << W << " H: " << H << " Density: " << density << endl;
-	int idx;
-	Point loc;
-	for(auto e: packedRects) {
-		std::tie(idx, loc, flipped) = e;
-		PRINT_RECTS(rects, idx, flipped);
-		cout << "x: " << loc.x << " y: " << loc.y << endl;
+	for(auto r: rectsInput) {
+		W=0; H=0;
+		density = packRect(packedRects, W, H, r);
+		printPackedRects(r, packedRects, W, H, density);
+		
+		W=0; H=0;
+		density = packRect(packedRects, W, H, r, true);
+		printPackedRects(r, packedRects, W, H, density);
+
+		density = packRectSqr(packedRects, W, H, r);
+		printPackedRects(r, packedRects, W, H, density);
 	}
 	
-	density = packRect(packedRects, W, H, rects1, true);
-	cout << endl << "W: " << W << " H: " << H << " Density: " << density << endl;
-	for(auto e: packedRects) {
-		std::tie(idx, loc, flipped) = e;
-		PRINT_RECTS(rects1, idx, flipped);
-		cout << "x: " << loc.x << " y: " << loc.y << endl;
-	}
-
 }
 
 

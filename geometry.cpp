@@ -1210,6 +1210,11 @@ bool newSpace(std::vector<Space>& spaces, const int i, const Rect& rect) {
 		return (rect.w != spaces[i].w && rect.h != spaces[i].h);	
 }
 
+// Checks if this rect will end up extending existing boundaries
+bool extendsBounds(std::vector<Space>& spaces, const int i, const Rect& rect, const double W, const double H) {
+		return 	(spaces[i].x + rect.w > W || spaces[i].y + rect.h > H);
+} 
+
 void splitSpace(std::vector<Space>& spaces, const int i, const Rect& rect) {
 		// Adjust spaces, split if necessary
 		Space space = spaces[i];
@@ -1284,7 +1289,7 @@ int findLeftmostSpace(const std::vector<Space>& spaces, const Rect& rect) {
 	
 	// See if we can find another match which is leftmost	
 	while( itFound != itFirst && itFound != spaces.rend() ) {
-		// Serach in reverse: our next range start is past previous found: ++itFound (reverse iterator)
+		// Search in reverse: our next range start is past previous found: ++itFound (reverse iterator)
 		itFound = std::find_if((++itFound), spaces.rend(), 
 							[&rect](const Space& s){ return (rect.w <= s.w && rect.h <= s.h); });
 							
@@ -1301,6 +1306,63 @@ int findLeftmostSpace(const std::vector<Space>& spaces, const Rect& rect) {
 		return 0;
 	}	
 }
+
+int findBottommostSpace(const std::vector<Space>& spaces, const Rect& rect) {
+	// Look for space to fit given rectangle in order in spaces (we find smallest first!)
+	
+	if( spaces.size() <= 1 ) // trivial, no need to search
+		return 0;
+		
+	auto itFound = spaces.begin();
+	auto itFirst = spaces.begin();
+	auto itLeftFound = itFound;
+	
+	// Search 
+	itFound = std::find_if(itFound, spaces.end(), 
+							[&rect](const Space& s){ return (rect.w <= s.w && rect.h <= s.h); });
+	itLeftFound = itFound;
+	
+	// See if we can find another match which is leftmost	
+	while( itFound != itFirst && itFound != spaces.end() ) {
+		// Search in reverse: our next range start is past previous found: ++itFound
+		itFound = std::find_if((++itFound), spaces.end(), 
+							[&rect](const Space& s){ return (rect.w <= s.w && rect.h <= s.h); });
+							
+		if( itFound != itFirst && (*itFound).x < (*itLeftFound).x ) { // Found a new lower left
+			itLeftFound = itFound;			
+		}									
+	}
+																				
+	if( itLeftFound != spaces.end() ) { // convert it into index from top
+		return (itLeftFound - itFirst);
+	} 
+	else {
+		std::cout << "Error: Not found any place for rectangle {" << rect.w << ", " << rect.h << "}" << std::endl;
+		return 0;
+	}	
+}
+
+void calculateBounds(double& W, double& H, const std::vector<std::tuple<int, Point, bool>>& packedRects, const std::vector<Rect>& rects) {
+	// Our height is topmost space vertical position as it would be first space still remaining
+	// since we chose large vertical space initially.
+	// Our width is rightmost rect position
+	// W = spaces[0].w; H = spaces[0].y;
+	int i;
+	Point loc;
+	bool flipped;
+	double rightEdge, bottomEdge;	
+	W = 0; H = 0;
+	// Find rightmost edge among our placed rects
+	for(const auto& r: packedRects) {
+		std::tie(i, loc, flipped) = r;
+		rightEdge = (!flipped ? loc.x + rects[i].w : loc.x + rects[i].h);
+		bottomEdge = (!flipped ? loc.y + rects[i].h : loc.y + rects[i].w);
+
+		if( W < rightEdge ) W = rightEdge;
+		if( H < rightEdge ) H = bottomEdge;
+	}
+}
+
 
 // Pack given rectangles (w,h) into a compact rectangle sheet (input/output: W, H) and their positions
 // (index of rect, x, y, flip status).
@@ -1324,15 +1386,26 @@ double packRect(std::vector<std::tuple<int, Point, bool>>& packedRects, double& 
 			  {return (rects[i1].h == rects[i2].h ? rects[i1].w > rects[i2].w : rects[i1].h > rects[i2].h);});
 			  
 	// Find maximum width among given rectangles
-	double maxW = 0, totalH = 0, area = 0;
+	double maxW = 0, totalH = 0, area = 0, maxH = 0, sqrSide =0;
 	for(const auto& r: rects) {
 		if( maxW < r.w ) maxW = r.w;
+		if( maxH < r.h ) maxH = r.h;
 		totalH += r.h;
 		area += r.w * r.h;
 	}
+
+    sqrSide = (int)(sqrt(area*1.1)+0.5);
 	
-	// Initialize space to go for squarish fit: side of square containing total area (bit larger)
-	W = MAX(maxW, (int)(sqrt(area*1.1)+0.5)); H = totalH;	
+	// Initialize space to go for squarish fit: side of square containing total area (bit larger)	
+	if( W == 0 ) 
+		W = MAX(maxW, sqrSide);
+	else 
+		W = MAX(maxW, W);
+
+	if( H == 0 )
+		H = totalH;
+	else
+		H = MAX(totalH, H);	
 	
 	Rect flippedRect, tRect;
 	std::vector<Space> spaces;
@@ -1340,9 +1413,10 @@ double packRect(std::vector<std::tuple<int, Point, bool>>& packedRects, double& 
 	packedRects.clear();
 	
 	// Put in the first rect
-	int r = sortedRectIdx[0], s;
+	int r = sortedRectIdx[0], s, s1;
 	bool flipped = false;
-	packedRects.push_back(std::make_tuple(r, Point({spaces[0].x, spaces[0].y, 0}), false));	
+	packedRects.push_back(std::make_tuple(r, Point({spaces[0].x, spaces[0].y, 0}), false));
+	W = spaces[0].x + rects[r].w; H = spaces[0].y + rects[r].h;	
 	splitSpace(spaces, 0, rects[r]);			
 	
 	// Place rest of the rectangles
@@ -1352,50 +1426,133 @@ double packRect(std::vector<std::tuple<int, Point, bool>>& packedRects, double& 
 		// int i = findSpace(spaces, rects[r]);
 		r = sortedRectIdx[j];
 		
-		if( flipRect && rects[r].w < rects[r].h ) {
-			flippedRect.w = rects[r].h; flippedRect.h = rects[r].w;
-			flipped = true;
-		}
-		else {
-			flippedRect = rects[r];
-			flipped = false;
-		}
+		flippedRect = rects[r];
+		flipped = false;
 				
 		s = findLeftmostSpace(spaces, flippedRect);	
 		
-		// We prefer orientation that does not create new space and lower right extent
-		if( flipRect && (newSpace(spaces, s, flippedRect) || flippedRect.w > flippedRect.h) ) {
+		// We prefer orientation that does not create new space and extend bounds
+		//if( flipRect && (newSpace(spaces, s, flippedRect) || flippedRect.w > flippedRect.h) ) {
+		if( flipRect && (newSpace(spaces, s, flippedRect) || extendsBounds(spaces, s, flippedRect, W, H)) ) {
 			tRect.w = flippedRect.h; tRect.h = flippedRect.w;
-			if( fitsSpace(spaces, s, tRect) && !newSpace(spaces, s, tRect) ) {
+			s1 = findLeftmostSpace(spaces, tRect);				
+			if( fitsSpace(spaces, s1, tRect) && (!extendsBounds(spaces, s1, tRect, W, H) || s1 != 0)  ) {
 				flippedRect = tRect;
 				flipped = !flipped;
+				s = s1;
 			}			
 		}
 		
-		packedRects.push_back(std::make_tuple(r, Point({spaces[s].x, spaces[s].y, 0}), flipped));				
+		packedRects.push_back(std::make_tuple(r, Point({spaces[s].x, spaces[s].y, 0}), flipped));
+		if( W < spaces[s].x + flippedRect.w ) W = spaces[s].x + flippedRect.w;
+		if( H < spaces[s].y + flippedRect.h ) H = spaces[s].y + flippedRect.h;
+						
 		splitSpace(spaces, s, flippedRect);
+		
 	}						
 	
 	// Did we pack all rects?
 	assert( packedRects.size() == rects.size() );
 	
 	
-	// Our height is topmost space vertical position as it would be first space still remaining
-	// since we chose large vertical space initially.
-	// Our width is rightmost rect position
-	// W = spaces[0].w; H = spaces[0].y;
-	int i;
-	Point loc;
-	double rightEdge;	
-	W = 0; H = spaces[0].y;
-	// Find rightmost edge among our placed rects
-	for(const auto& r: packedRects) {
-		std::tie(i, loc, flipped) = r;
-		rightEdge = (!flipped ? loc.x + rects[i].w : loc.x + rects[i].h);
-		if( W < rightEdge ) W = rightEdge;
+	// We are now tracking W,H live now!
+	// calculateBounds(W, H, packedRects, rects);
+		
+	// return packing density: What % of output rectangle sheet (W*H) was packed with input rectangles
+	return (area/(W*H));		
+}
+
+// Pack given rectangles (w,h) into a compact squarish sheet (output: W, H) and their positions
+// (index of rect, x, y, flip status).
+// Returns packing density (ratio of packed area to overall output sheet area)
+double packRectSqr(std::vector<std::tuple<int, Point, bool>>& packedRects, double& W, double& H,const std::vector<Rect>& rects, const bool flipRect) {
+	// We use simple algo: partioning output space into bins by splitting appropriately.
+	// 1. Sort the input rectangles in decreasing order of their heights
+	// 2. Initialize output rect space to accomodate at least maximum width rect
+	// 3. For each input rect in sorted rects: 
+	//		-Place it in smallest space bin possible
+	//      -If found space is perfect match, remove this bin
+	//		-If found space matches rect height/width, adjust its free space accoridingly
+	//		-Otherwise split the space (new and adjust current one)
+	
+	// Create a sorted index on given rectangles in decreasing order of their heights
+	// for same heights rectangles, prefer larger width rectangle
+    std::vector<int> sortedRectIdx(rects.size());
+  	std::iota(sortedRectIdx.begin(), sortedRectIdx.end(), 0);
+  	std::sort(sortedRectIdx.begin(), sortedRectIdx.end(),
+       		  [&rects](const int i1, const int i2) 
+			  {return (rects[i1].h == rects[i2].h ? rects[i1].w > rects[i2].w : rects[i1].h > rects[i2].h);});
+			  
+	// Find maximum width among given rectangles
+	double maxW = 0, totalH = 0, area = 0, totalW = 0;
+	for(const auto& r: rects) {
+		if( maxW < r.w ) maxW = r.w;
+		totalH += r.h;
+		area += r.w * r.h;
+		totalW += r.w;
 	}
+	
+	// Initialize space to go for squarish fit: side of square containing total area (bit larger)
+	//W = MAX(maxW, (int)(sqrt(area*1.1)+0.5)); H = totalH;	
+	//W = totalW; H = totalH;
+	W = (int)(sqrt(totalW*totalH) + 0.5);
+	H = W;	
+	
+	Rect flippedRect, tRect;
+	std::vector<Space> spaces;
+	spaces.push_back({x:0, y:0, w:W, h:H});
+	packedRects.clear();
+	
+	// Put in the first rect
+	int r = sortedRectIdx[0], s, s1;
+	bool flipped = false;
+	packedRects.push_back(std::make_tuple(r, Point({spaces[0].x, spaces[0].y, 0}), false));	
+	W = rects[r].w; H = rects[r].h;
+	splitSpace(spaces, 0, rects[r]);			
+	
+	// Place rest of the rectangles
+	for(int j=1; j < sortedRectIdx.size(); j++) {
+		// Looking for place to fit this rect
+		// We look in squarish order to first match with small space
+		// int i = findSpace(spaces, rects[r]);
+		r = sortedRectIdx[j];
+		
+		flippedRect = rects[r];
+		flipped = false;
+		
+		if( W + flippedRect.w <= H ) {	
+			s = findLeftmostSpace(spaces, flippedRect);	
+		}
+		else {
+			s = findBottommostSpace(spaces, flippedRect);				
+		}
+		
+		// We prefer orientation that does not create new space and extend bounds
+		if( flipRect && (newSpace(spaces, s, flippedRect) || extendsBounds(spaces, s, flippedRect, W, H)) ) {
+			tRect.w = flippedRect.h; tRect.h = flippedRect.w;
+			s1 = findLeftmostSpace(spaces, tRect);				
+			if( fitsSpace(spaces, s1, tRect) && (!extendsBounds(spaces, s1, tRect, W, H) || s1 != 0)  ) {
+				flippedRect = tRect;
+				flipped = !flipped;
+				s = s1;
+			}			
+		}
+		
+		packedRects.push_back(std::make_tuple(r, Point({spaces[s].x, spaces[s].y, 0}), flipped));
+		if( W < spaces[s].x + flippedRect.w ) W = spaces[s].x + flippedRect.w;
+		if( H < spaces[s].y + flippedRect.h ) H = spaces[s].y + flippedRect.h;
+						
+		splitSpace(spaces, s, flippedRect);
+	}						
+	
+	// Did we pack all rects?
+	assert( packedRects.size() == rects.size() );
+	
+	// We are now tracking W,H live now!
+	// calculateBounds(W, H, packedRects, rects);
 	
 	// return packing density: What % of output rectangle sheet (W*H) was packed with input rectangles
 	return (area/(W*H));		
 }
+
 
