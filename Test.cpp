@@ -12,6 +12,7 @@
 #include "numbers.h"
 #include "lstrings.h"
 #include "geometry.h"
+#include "matrix.h"
 
 using namespace measure;
 using namespace fibonacci;
@@ -566,8 +567,10 @@ void TestGeom() {
 			{17,33}, {17,33}, {17,33}, {17,33}, {17,33}, {17,33}, {17,33}, {17,33}, {17,33}, {17,33},
 			{17,33}, {17,33}, {17,33}, {17,33}, {17,33}, {17,33}, {17,33}, {17,33}, {17,33}, {17,33},			 
 			 });
+	std::vector<Rect> rects6({ {400,100}, {200,150}, {50,250}, {200,50}, {50,200}, {200,50} });
+	std::vector<Rect> rects7({ {100,400}, {150,200}, {50,250}, {50,200}, {50,200}, {50,200} });
 			
-	auto rectsInput = {rects, rects1, rects2, rects3, rects4, rects5};
+	auto rectsInput = {rects, rects1, rects2, rects3, rects4, rects5, rects6, rects7};
 			
 	std::vector<std::tuple<int, Point, bool>> packedRects;
 	double W = 0, H = 0, density;
@@ -586,18 +589,116 @@ void TestGeom() {
 
 		density = packRectSqr(packedRects, W, H, r);
 		printPackedRects(r, packedRects, W, H, density);
+		
+		W=0; H=0;
+		density = packRectBest(packedRects, W, H, r, true, 4);
+		printPackedRects(r, packedRects, W, H, density);	
 	}
 	
+}
+
+void TestMatrix() {	
+	Matrix<double> mI;	
+	Matrix<double> m1({{2, -1, 3}, {0, 5, 2}, {1, -1, -2}});
+	//m1(0,0) = 2; m1(0,1) = -1;  m1(0,2) = 3;
+	//m1(1,0) = 0; m1(1,1) = 5; m1(1,2) = 2;
+	//m1(2,0) = 1; m1(2,1) = -1; m1(2,2) = -2;
+	
+	cout << "\nTesting matrix...\n";
+	cout << m1 << endl;
+	cout << "M * IdenityMatrix = \n" << m1 * mI << endl;
+	
+	cout << "Determinant = " << m1.determinant() << endl;
+	cout << "Minor = \n" << m1.minor() << endl;
+	cout << "Cofactor = \n" << m1.cofactor() << endl;
+	cout << "Adjoint = \n" << m1.adjoint() << endl;
+		
+	//cout << m1.minor_sub(0,0) << m1.minor_sub(0,0).determinant() << endl;
+	//cout << m1.minor_sub(0,1) << m1.minor_sub(0,1).determinant() << endl;
+	//cout << m1.minor_sub(1,0) << m1.minor_sub(1,0).determinant() << endl;	
+	//cout << m1.minor_sub(1,1) << m1.minor_sub(1,1).determinant() << endl;	
+	
+	cout << "Inverse = \n" << m1.inverse() << endl;
+	
+	cout << "M * Inv(M) = \n" << m1 * m1.inverse() << endl;
+	
+	
+	cout << "Solving Equations: \n";
+	
+	Matrix<double> m2({{2, 5}, {1, 2}});
+	Matrix<double> m2C({10, 2}, true);	
+	cout << m2;
+	cout << m2C;	
+	cout << "Solution: \n";
+	cout << m2.inverse() * m2C;
+
+	Matrix<double> m3({{1, -3, 3}, {2, 3, -1}, {4, -3, -1}});
+	Matrix<double> m3C({-4, 15, 19}, true);	
+	cout << m3;
+	cout << m3C;	
+	cout << "Solution: \n";
+	cout << m3.inverse() * m3C;
+	
+	Matrix<double> m4({{1, 1, 1, 1}, {2, 3, 0, -1}, {-3, 4, 1, 2}, {1, 2, -1, 1}});
+	Matrix<double> m4C({13, -1, 10, 1}, true);
+	cout << m4;
+	cout << m4C;	
+	cout << "Solution: \n";
+	cout << m4.inverse() * m4C << endl;
+	
+	/*
+	Problem to Solve:
+	A jar contains 100 blue, green, red and yellow marbles. There are twice as many yellow marbles as blue;
+	there are 10 more blue marbles than red; the sum of the red and yellow marbles is the same as the
+	sum of the blue and green.
+	How many marbles of each color are there: blue, green, red, yellow?
+	*/
+	m4 = Matrix<double>({{1, 1, 1, 1}, {2, 0, 0, -1}, {1, 0, -1, 0}, {-1, -1, 1, 1}});
+	m4C = Matrix<double>({100, 0, 10, 0}, true);
+	cout << m4;
+	cout << m4C;	
+	cout << "Solution: \n";
+	cout << m4.inverse() * m4C << endl;
+	
+	// Using cramer rule
+	cout << "Solution using cramer rule: \n";
+
+	std::vector<double> solVec = SolveLinearEquation(m4, m4C);
+	PRINT_ARRAY(solVec);
+	cout << "\n" << endl;
+		
+	
+	Matrix<double> m7({{1, 1, 1, 1, 2, 1, 4},
+	                   {2, 3, 0, -1, 0, 1, 2},
+					   {-3, 4, 1, 2, 1, 0, -1},
+					   {1, 2, -1, 1, 3, 3, 5},
+					   {5, 1, 4, 2, -1, 1, 7},
+					   {3, 5, -2, 5, 0, 3, 1},
+					   {2, 1, 4, -1, 4, 1, -3}});
+	Matrix<double> m7C({50, -2, 10, 65, 80, 35, 110}, true);
+	cout << m7;
+	cout << m7C;	
+	cout << "Solution: \n";
+	solVec = SolveLinearEquation(m7, m7C, false);
+	PRINT_ARRAY(solVec)
+	cout << endl;
+	
+	cout << "Solution using cramer rule: \n";
+	solVec = SolveLinearEquation(m7, m7C);
+	PRINT_ARRAY(solVec)
+	cout << endl;		
 }
 
 
 // Test Driver
 int main()
 { 
+  
   TestFib();
   TestSort();
   TestNum();
   TestStr();
-  TestGeom(); 
+  TestGeom();
+  TestMatrix(); 
   return 0;
 }

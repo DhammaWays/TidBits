@@ -1555,4 +1555,185 @@ double packRectSqr(std::vector<std::tuple<int, Point, bool>>& packedRects, doubl
 	return (area/(W*H));		
 }
 
+double packRectFixedSize(std::vector<std::tuple<int, Point, bool>>& packedRects, double& W, double& H,const std::vector<Rect>& rects, const bool flipRect, std::vector<int>& sortedRectIdx, double area) {
+
+	Rect flippedRect, tRect;
+	std::vector<Space> spaces;
+	spaces.push_back({x:0, y:0, w:W, h:H});
+	packedRects.clear();
+	
+	// Make the first rect to have max height even if it needs to be flipped
+	bool firstRectFlipped = false;
+	if( flipRect ) {
+		
+		int m=0;
+		double maxHeight = rects[sortedRectIdx[0]].h;
+		for(int i=0; i < sortedRectIdx.size(); i++) {
+			if( rects[sortedRectIdx[i]].w > maxHeight ) {
+				m = i;
+				maxHeight = rects[sortedRectIdx[i]].w;
+				firstRectFlipped = true;
+			}
+		}
+		
+		// Swap with first rect with max width rect
+		if( firstRectFlipped && m > 0) {
+			std::swap(sortedRectIdx[0], sortedRectIdx[m]);
+		}
+	}
+	
+	// Put in the first rect
+	int r = sortedRectIdx[0], s, s1;
+	bool flipped = firstRectFlipped;
+	packedRects.push_back(std::make_tuple(r, Point({spaces[0].x, spaces[0].y, 0}), firstRectFlipped));
+	flippedRect = rects[r];
+	if(firstRectFlipped) {
+		flippedRect.w = rects[r].h;
+		flippedRect.h = rects[r].w;
+	}
+	W = spaces[0].x + flippedRect.w; H = spaces[0].y + flippedRect.h;	
+	splitSpace(spaces, 0, flippedRect);
+	
+	// Place rest of the rectangles
+	for(int j=1; j < sortedRectIdx.size(); j++) {
+		// Looking for place to fit this rect
+		// We look in reverse order to first match with small space
+		// int i = findSpace(spaces, rects[r]);
+		r = sortedRectIdx[j];
+		
+		flippedRect = rects[r];
+		flipped = false;
+				
+		s = findLeftmostSpace(spaces, flippedRect);	
+		
+		// We prefer orientation that does not create new space and extend bounds
+		//if( flipRect && (newSpace(spaces, s, flippedRect) || flippedRect.w > flippedRect.h) ) {
+		if( flipRect && (newSpace(spaces, s, flippedRect) || extendsBounds(spaces, s, flippedRect, W, H)) ) {
+			tRect.w = flippedRect.h; tRect.h = flippedRect.w;
+			s1 = findLeftmostSpace(spaces, tRect);				
+			if( fitsSpace(spaces, s1, tRect) && (!extendsBounds(spaces, s1, tRect, W, H) || s1 != 0)  ) {
+				flippedRect = tRect;
+				flipped = !flipped;
+				s = s1;
+			}			
+		}
+		
+		packedRects.push_back(std::make_tuple(r, Point({spaces[s].x, spaces[s].y, 0}), flipped));
+		if( W < spaces[s].x + flippedRect.w ) W = spaces[s].x + flippedRect.w;
+		if( H < spaces[s].y + flippedRect.h ) H = spaces[s].y + flippedRect.h;
+						
+		splitSpace(spaces, s, flippedRect);
+		
+	}						
+	
+	// Did we pack all rects?
+	assert( packedRects.size() == rects.size() );
+	
+	
+	// We are now tracking W,H live now!
+	// calculateBounds(W, H, packedRects, rects);
+		
+	// return packing density: What % of output rectangle sheet (W*H) was packed with input rectangles
+	return (area/(W*H));		
+}
+
+
+// Pack given rectangles (w,h) into a compact rectangle sheet (input/output: W, H) and their positions
+// (index of rect, x, y, flip status).
+// Returns packing density (ratio of packed area to overall output sheet area)
+// Iterate to find best fit (number of iteration limited to NITER)
+double packRectBest(std::vector<std::tuple<int, Point, bool>>& packedRects, double& W, double& H,const std::vector<Rect>& rects, const bool flipRect, const int NITER) {
+	// We use simple algo: partioning output space into bins by splitting appropriately.
+	// 1. Sort the input rectangles in decreasing order of their heights
+	// 2. Initialize output rect space to accomodate at least maximum width rect
+	// 3. For each input rect in sorted rects: 
+	//		-Place it in smallest space bin possible
+	//      -If found space is perfect match, remove this bin
+	//		-If found space matches rect height/width, adjust its free space accoridingly
+	//		-Otherwise split the space (new and adjust current one)
+	
+	// Create a sorted index on given rectangles in decreasing order of their heights
+	// for same heights rectangles, prefer larger width rectangle
+    std::vector<int> sortedRectIdx(rects.size());
+  	std::iota(sortedRectIdx.begin(), sortedRectIdx.end(), 0);
+  	std::sort(sortedRectIdx.begin(), sortedRectIdx.end(),
+       		  [&rects](const int i1, const int i2) 
+			  {return (rects[i1].h == rects[i2].h ? rects[i1].w > rects[i2].w : rects[i1].h > rects[i2].h);});
+			  
+	// Find maximum width among given rectangles
+	double maxW = 0, totalH = 0, area = 0, maxH = 0, sqrSide =0;
+	for(const auto& r: rects) {
+		if( maxW < r.w ) maxW = r.w;
+		if( maxH < r.h ) maxH = r.h;
+		totalH += r.h;
+		area += r.w * r.h;
+	}
+
+    sqrSide = (int)(sqrt(area*1.1)+0.5);
+	
+	// Initialize space to go for squarish fit: side of square containing total area (bit larger)	
+	if( W == 0 ) 
+		W = MAX(maxW, sqrSide);
+	else 
+		W = MAX(maxW, W);
+
+	if( H == 0 )
+		H = totalH;
+	else
+		H = MAX(totalH, H);	
+		
+	
+	std::vector<std::tuple<int, Point, bool>> packedRectsIter;	
+	double density = 0, maxDensity = 0;
+	double bottomEdge = 0, maxBottomEdge=0, bottomW, iterW, iterH;
+	int bottomRect = 0, i, sign = -1;
+	bool flipped;
+	Point loc;
+	
+	maxDensity = packRectFixedSize(packedRects, W, H, rects, flipRect, sortedRectIdx, area);
+	packedRectsIter = packedRects; iterW = W; iterH = H;
+	for(int k=1; k < NITER; k++) {
+		// Adjust width and height and try the next fit
+		
+		// Find bottommost placed rect
+		std::tie(i, loc, flipped) = packedRectsIter[0];
+		maxBottomEdge = (!flipped ? loc.y + rects[i].h : loc.y + rects[i].w);
+		bottomRect = 0;
+		for(int j=1; j < packedRectsIter.size(); j++) {
+			std::tie(i, loc, flipped) = packedRectsIter[j];
+			bottomEdge = (!flipped ? loc.y + rects[i].h : loc.y + rects[i].w);
+			if( bottomEdge > maxBottomEdge ) {
+				maxBottomEdge = bottomEdge;
+				bottomRect = j;
+			}
+		}
+		
+		// Adjust the width by bottommost rect width and try the next fit
+		std::tie(i, loc, flipped) = packedRectsIter[bottomRect];
+		bottomW = (!flipped ? rects[i].w : rects[i].h);
+		
+		iterW += sign * bottomW;
+		if( iterW < maxW ) {
+			iterW = maxW;
+			sign = 1;
+		}
+		else {
+			sign = -1;
+		}
+			
+		iterH = totalH;
+		density = packRectFixedSize(packedRectsIter, iterW, iterH, rects, flipRect, sortedRectIdx, area);
+		
+		// Keep track of best fit so far
+		if(density > maxDensity) {
+			maxDensity = density;
+			packedRects = packedRectsIter;
+			W = iterW; H = iterH;
+		}		
+				
+	}
+	
+	return maxDensity;	
+}
+
 

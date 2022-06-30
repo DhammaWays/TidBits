@@ -232,4 +232,10 @@ double packRect(std::vector<std::tuple<int, Point, bool>>& packedRects,
 // Returns packing density (ratio of packed area to overall output sheet area)
 double packRectSqr(std::vector<std::tuple<int, Point, bool>>& packedRects, double& W, double& H,const std::vector<Rect>& rects, const bool flipRect=false);
 
+// Pack given rectangles (w,h) into a compact rectangle sheet (input/output: W, H) and their positions
+// (index of rect, x, y, flip status).
+// Returns packing density (ratio of packed area to overall output sheet area)
+// Iterate to find best fit (number of iteration limited to NITER)
+double packRectBest(std::vector<std::tuple<int, Point, bool>>& packedRects, double& W, double& H,const std::vector<Rect>& rects, const bool flipRect=false, const int NITER=3);
+
 #endif
