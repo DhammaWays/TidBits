@@ -660,8 +660,8 @@ void TestMatrix() {
 	cout << "Solution: \n";
 	cout << m4.inverse() * m4C << endl;
 	
-	// Using cramer rule
-	cout << "Solution using cramer rule: \n";
+	// Using GEM rule
+	cout << "Solution using gauss method: \n";
 
 	std::vector<double> solVec = SolveLinearEquation(m4, m4C);
 	PRINT_ARRAY(solVec);
@@ -678,22 +678,27 @@ void TestMatrix() {
 	Matrix<double> m7C({50, -2, 10, 65, 80, 35, 110}, true);
 	cout << m7;
 	cout << m7C;	
-	cout << "Solution: \n";
-	solVec = SolveLinearEquation(m7, m7C, false);
+	cout << "Solution using inverse method: \n";
+	solVec = SolveLinearEquation(m7, m7C, SolverMethod::Inverse);
 	PRINT_ARRAY(solVec)
 	cout << endl;
 	
 	cout << "Solution using cramer rule: \n";
-	solVec = SolveLinearEquation(m7, m7C);
+	solVec = SolveLinearEquation(m7, m7C, SolverMethod::Cramer);
+	PRINT_ARRAY(solVec)
+	cout << endl;
+	
+	cout << "Solution using GEM method: \n";
+	solVec = SolveLinearEquation(m7, m7C, SolverMethod::Gauss);
 	PRINT_ARRAY(solVec)
 	cout << endl;		
+		
 }
 
 
 // Test Driver
 int main()
 { 
-  
   TestFib();
   TestSort();
   TestNum();

@@ -255,6 +255,88 @@ std::ostream& operator<<(std::ostream& o, const Matrix<T>& m) {
 
  // Matrix/vector operations 
  
+ // Misc vector utility 
+ 
+ template<typename T>                                                                                                                                                                                                     
+ std::vector<T> operator*(std::vector<T> vec1, std::vector<T> vec2) {
+  std::vector<T> result(vec1);
+  for(int i=0; i < vec1.size(); i++) {
+  	result[i] *= vec2[i]; 
+  }
+  
+  return result;
+  }
+  
+ template<typename T>                                                                                                                                                                                                     
+ std::vector<T> operator-(std::vector<T> vec1, std::vector<T> vec2) {
+  std::vector<T> result(vec1);
+  for(int i=0; i < vec1.size(); i++) {
+  	result[i] -= vec2[i]; 
+  }
+  
+  return result;
+  }
+  
+ template<typename T>                                                                                                                                                                                                     
+ std::vector<T> operator+(std::vector<T> vec1, std::vector<T> vec2) {
+  std::vector<T> result(vec1);
+  for(int i=0; i < vec1.size(); i++) {
+  	result[i] += vec2[i]; 
+  }
+  
+  return result;
+  }
+  
+ template<typename T>                                                                                                                                                                                                     
+ std::vector<T> operator/(std::vector<T> vec1, std::vector<T> vec2) {
+  std::vector<T> result(vec1);
+  for(int i=0; i < vec1.size(); i++) {
+  	result[i] /= vec2[i]; 
+  }
+  
+  return result;
+  }
+ 
+ template<typename T>                                                                                                                                                                                                     
+ std::vector<T> operator*(std::vector<T> vec, const T& rhs) {
+  std::vector<T> result(vec);
+  for(int i=0; i < vec.size(); i++) {
+  	result[i] *= rhs; 
+  }
+  
+  return result;
+  }
+  
+ template<typename T>                                                                                                                                                                                                     
+ std::vector<T> operator-(std::vector<T> vec, const T& rhs) {
+  std::vector<T> result(vec);
+  for(int i=0; i < vec.size(); i++) {
+  	result[i] -= rhs; 
+  }
+  
+  return result;
+  }
+  
+ 
+ template<typename T>                                                                                                                                                                                                     
+ std::vector<T> operator+(std::vector<T> vec, const T& rhs) {
+  std::vector<T> result(vec);
+  for(int i=0; i < vec.size(); i++) {
+  	result[i] += rhs; 
+  }
+  
+  return result;
+  }
+  
+  template<typename T>                                                                                                                                                                                                     
+ std::vector<T> operator/(std::vector<T> vec, const T& rhs) {
+  std::vector<T> result(vec);
+  for(int i=0; i < vec.size(); i++) {
+  	result[i] /= rhs; 
+  }
+  
+  return result;
+  }
  template<typename T>                                                                                                                                                                                                    
  std::vector<T> Matrix<T>::operator*(const std::vector<T>& rhs) {
   std::vector<T> result(_rows, (T)0);
@@ -455,49 +537,125 @@ std::ostream& operator<<(std::ostream& o, const Matrix<T>& m) {
   return result;  			
  }
  
+// Solve linear equations using GEM (Gauss Elimination Method) 
+template <typename T>
+std::vector<T> SolveLinEqGEM(const Matrix<T>& mA, const Matrix<T>& mC) {
+	// GEM Algorithm:
+	// 1. Reduction: Reduce coeff matrix into an upper diagonal matrix ( also perform same operations on constant matrix)
+	// 2. Back subsitution: Working backwards from (last row/variable) calculate value of
+	//    each variable, i.e. Xn, Xn-1, Xn-2, ..., X1
+	//
+	// Assumption: No diagonal element of coefficient matrix is zero!
+	// Complexity: O(n^3), more like 2/3 * n^3 - 3/2 * n^2 - 7/6 * n
+	//
+	
+	const unsigned N = mA.ncols();
+	std::vector<T> solVec;
+	solVec.resize(N);
+	Matrix<T> Ag(mA); // make copy of coef matrix; we will reduce it
+	Matrix<T> Cg(mC); // make copy of constant matrix as well
+	T redFactor; // reduction factor to for each row/element
+	
+	// std::cout << "GEM: N: " << N << " Given coeff matrix: " << std::endl << Ag;
+	
+	// Reduction
+	for(unsigned k = 0; k < N - 1; k++) {
+		for(unsigned i = k+1; i < N; i++) {
+			assert(Ag(k, k) != (T)0 );
+			redFactor = Ag(i, k) / Ag(k, k);
+			// Row(i) = Row(i) - reductionFactor * Row(k)
+			// Ag = Ag.replace_row(i, Ag.get_row(i) - Ag.get_row(k) * redFactor);
+			
+			// Loop is from k+1..N as Ag[0..k-1] should already be zero by now!
+			Ag(i, k) = 0; // Our reduction factor gaurantees that "k" elemnet of "i" row would be zero after subtracting!
+			for(unsigned j = k+1; j < N; j++) {
+				Ag(i, j) -= redFactor * Ag(k, j);
+			}
+			Cg(i, 0) -= redFactor * Cg(k, 0); 
+		}
+	}
+	// Assert: Reduced Coefficient matrix should be upper diagonal matrix now!
+	//         Therefore ALL lower diagonal elements should be zero!
+	// std::cout << "Reduced coeff matrix: " << std::endl << Ag;
+
+	
+	// Back substitution
+	// Calculate solution working backwards
+	T sum;
+	solVec[N-1] = Cg(N-1,0) / Ag(N-1, N-1); // Last variable
+	// Work backwards for remaining variables: Xn-2, Xn-3, ..., X0
+	for(int i = N - 2; i >= 0; i--) { // cannot have "unsigned" since "i" would below zero in check!
+	    // Substitute all caluclated variables in current row: Xn-1, Xn-2, ..., Xi+1
+		// For given row, find the forward sum of remaining part of the equation
+		// for already calculated variables.
+		sum = 0;
+		for(int j = i + 1; j <= N-1; j++) {
+			sum += Ag(i, j) * solVec[j];
+		}
+		// Calculate value of next variable
+		assert(Ag(i, i) != (T)0);
+		solVec[i] = (Cg(i, 0) - sum) / Ag(i, i);
+	}
+	
+	// std::cout << "GEM Solution: " << Matrix<double>(solVec, false) << std::endl;	
+	return solVec;	
+}
+
+// Solve linear equations using Cramer Rule 
+template <typename T>
+std::vector<T> SolveLinEqCramer(const Matrix<T>& mA, const Matrix<T>& mC) {
+	// Cramer rule:
+	// 1. Ai = For "i" variable solution, substitue "i" column in coeff matrix with constants
+	// 2. Xi = det|Ai| / det|A|
+	//
+	// Complexity: O(n!), closer to 3 * factorial(n+1), so it is super expensive!
+	//
+	// Why does cramer rule work?
+	// Let us see in action in 2 variable case: a1 * x + b1 * y = c1, a2 * x + b2 * y = c2
+	//  [ a1 b1 ]   [ x ]   [ c1 ]
+	//  [ a2 b2 ] * [ y ] = [ c2 ]
+	// can be rewritten as:
+	//  [ a1 b1 ]   [ x  0]   [ c1 b1]
+	//  [ a2 b2 ] * [ y  1] = [ c2 b2]
+	//
+	//  So here, leftmost matrix is our original coeff matrix "A", and rightmost matrix "Ai" is our
+	//  substituted coeff matrix where first column has been replaced by constant values.
+	//
+	//  if we now take determinant on both sides:
+	//    det|A| * x = det|Ai|
+	//    x = det|Ai| / det|A|
+	//
+	//  Similiarly, we can rewrite original equation as:
+	//  [ a1 b1 ]   [ 1  x]   [ a1 c1]
+	//  [ a2 b2 ] * [ 0  y] = [ a2 c2]
+	//  where we can see now our substituted coeff matrix "Ai" now has its second column replaced
+	//  with constants.
+	//   det|A| * y = det|Ai|
+	//   y = det|Ai| / det|A|
+	//
+	
+	std::vector<T> solVec;
+	solVec.resize(mA.ncols());
+	Matrix<T> Ai(mA);
+	std::vector<T> constVec = mC.get_col(0);
+	T detA = mA.determinant();
+	for(unsigned i = 0; i < mA.ncols(); i++) {
+		Ai = mA.replace_col(i, constVec);
+		solVec[i] = Ai.determinant()/ detA;
+	}
+	
+	return solVec;		
+}
+
+ 
  // Linear Equation Solvers
 template <typename T>
-std::vector<T> SolveLinearEquation(const Matrix<T>& mA, const Matrix<T>& mC, bool cramerRule) {
-	if( cramerRule ) {
-		// Cramer rule:
-		// 1. Ai = For "i" variable solution, substitue "i" column in coeff matrix with constants
-		// 2. Xi = det|Ai| / det|A|
-		//
-		// Why does cramer rule work?
-		// Let us see in action in 2 variable case: a1 * x + b1 * y = c1, a2 * x + b2 * y = c2
-		//  [ a1 b1 ]   [ x ]   [ c1 ]
-		//  [ a2 b2 ] * [ y ] = [ c2 ]
-		// can be rewritten as:
-		//  [ a1 b1 ]   [ x  0]   [ c1 b1]
-		//  [ a2 b2 ] * [ y  1] = [ c2 b2]
-		//
-		//  So here, leftmost matrix i sour original coeff matrix "A", and rightmost matrix "Ai" is our
-		//  substituted coeff matrix where first column has been replaced by constant values.
-		//
-		//  if we now take determinant on both sides:
-		//    det|A| * x = det|Ai|
-		//    x = det|Ai| / det|A|
-		//
-		//  Similiarly, we can rewrite original equation as:
-		//  [ a1 b1 ]   [ 1  x]   [ a1 c1]
-		//  [ a2 b2 ] * [ 0  y] = [ a2 c2]
-		//  where we can see now our substituted coeff matrix "Ai" now has its second column replaced
-		//  with constants.
-		//   det|A| * y = det|Ai|
-		//   y = det|Ai| / det|A|
-		//
-		
-		std::vector<T> solVec;
-		solVec.resize(mA.ncols());
-		Matrix<T> Ai(mA);
-		std::vector<T> constVec = mC.get_col(0);
-		T detA = mA.determinant();
-		for(unsigned i = 0; i < mA.ncols(); i++) {
-			Ai = mA.replace_col(i, constVec);
-			solVec[i] = Ai.determinant()/ detA;
-		}
-		
-		return solVec;		
+std::vector<T> SolveLinearEquation(const Matrix<T>& mA, const Matrix<T>& mC, const SolverMethod solveMethod) {
+	if( solveMethod == SolverMethod::Gauss ) {
+		return SolveLinEqGEM(mA, mC);
+	}
+	else if( solveMethod == SolverMethod::Cramer ) {
+		return SolveLinEqCramer(mA, mC);
 	}
 	else { // Use standard inverse method
 		//  A * X = C => X = Inv(A) * C		

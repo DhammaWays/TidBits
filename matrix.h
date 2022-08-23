@@ -87,8 +87,9 @@ template <typename T=double> class Matrix {
 //
 //  Solver should return: [ -10, 6 ], i.e. x = -10, y = 6 is the solution
 
+enum class SolverMethod {Gauss, Cramer, Inverse};
 template <typename T=double>
-std::vector<T> SolveLinearEquation(const Matrix<T>& mA, const Matrix<T>& mC, bool cramerRule = true);
+std::vector<T> SolveLinearEquation(const Matrix<T>& mA, const Matrix<T>& mC, const SolverMethod solveMethod = SolverMethod::Gauss);
 
 #include "matrix.cpp"
 
