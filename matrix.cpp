@@ -119,6 +119,27 @@ std::ostream& operator<<(std::ostream& o, const Matrix<T>& m) {
  // Matrix mathematical operations 
  
  template<typename T>                                                                                                                                                                                              
+ bool Matrix<T>::operator==(const Matrix<T>& rhs) {
+  if( _rows != rhs.nrows() || _cols != rhs.ncols() )
+  	return false;
+
+  for (unsigned i=0; i < _rows; i++) {
+    for (unsigned j=0; j < _cols; j++) {
+      if( this->_mat[i][j] != rhs(i,j) )
+	  	return false;
+     }
+  }
+	
+  return true; 
+ }
+ 
+ template<typename T>                                                                                                                                                                                              
+ bool Matrix<T>::operator!=(const Matrix<T>& rhs) {
+ 	return !(*this == rhs); 
+ }
+ 
+ 
+ template<typename T>                                                                                                                                                                                              
  Matrix<T> Matrix<T>::operator+(const Matrix<T>& rhs) {
   Matrix<T> result(_rows, _cols, (T)0);
 
@@ -430,18 +451,35 @@ std::ostream& operator<<(std::ostream& o, const Matrix<T>& m) {
  // Special matrix operations
  
  template<typename T>
- T Matrix<T>::determinant() const {
+ T Matrix<T>::determinant(bool bStandardWay) const {
  	//return (T)1;
 	if( this->_rows == 1 && this->_cols == 1 ){
 		return this->_mat[0][0];
 	}
+	else if( this->_rows == 2 && this->_cols == 2 )
+	{
+		return this->_mat[0][0] * this->_mat[1][1] - this->_mat[0][1] * this->_mat[1][0];
+	}
 	
 	T det = (T)0;
-	int sign = 1;
-	// Summing up determinant of sub-minor matrix for first row
-	for(unsigned j = 0; j < _cols; j++) {
-		det += sign * this->_mat[0][j] * this->minor_sub(0, j).determinant();
-		sign = -sign; // Keep flipping sign to simulate (-1) ^ (i+j) 
+	
+	if( bStandardWay ){
+		int sign = 1;
+		// Summing up determinant of sub-minor matrix for first row
+		for(unsigned j = 0; j < _cols; j++) {
+			det += sign * this->_mat[0][j] * this->minor_sub(0, j).determinant();
+			sign = -sign; // Keep flipping sign to simulate (-1) ^ (i+j) 
+		}
+	} else {
+		Matrix<T> result(*this);
+		
+		// Reduce the matrix to upper triangular matrix
+		result.reduceTriangular();
+		
+		// Determinant of a triangular matrix is product of its diagonal elements
+	    det = (T)1;
+		for(int i=0; i < result.nrows(); i++)
+			det *= result(i,i);
 	}
 	
 	return det;
@@ -483,7 +521,7 @@ std::ostream& operator<<(std::ostream& o, const Matrix<T>& m) {
  }
  
   template<typename T>
- Matrix<T> Matrix<T>::minor() const {
+  Matrix<T> Matrix<T>::minor() const {
   Matrix<T> result(_rows, _cols, (T)0);
   Matrix<T> result_sub(_rows-1, _cols-1, (T)0);
 
@@ -527,15 +565,114 @@ std::ostream& operator<<(std::ostream& o, const Matrix<T>& m) {
  }
  
  template<typename T>
- Matrix<T> Matrix<T>::inverse() const {
-  Matrix<T> result(_rows, _cols, (T)0);
+ Matrix<T> Matrix<T>::inverse(bool bStandardWay) const {
   
-  T det_val = this->determinant();
-  assert(det_val != (T)0);
-  result = this->adjoint() * (1/det_val); 
-    
-  return result;  			
+  if( bStandardWay ) {
+	  Matrix<T> result(_rows, _cols, (T)0);
+	  
+	  T det_val = this->determinant();
+	  assert(det_val != (T)0);
+	  result = this->adjoint() * (1/det_val);
+	  
+	  return result;
+  }
+  else {
+    Matrix<T> result(*this);
+  	Matrix<T> mI(_rows);  
+  	result.reduceIdentity(&mI);
+	
+	return mI;
+  }
+  
+  // Should not get here!
+  return Matrix<T>(_rows);  			
  }
+ 
+// Reduce matrix to upper/lower triangular matrix (lower/upper half becomes zeros)
+// Reduces it in-place, so orginal matrix along with given adjacent matrix is directly reduced
+template <typename T>
+Matrix<T>& Matrix<T>::reduceTriangular(Matrix<T>* pmAdj, bool bUpperTriangular) {
+	// Reduction: Reduce coeff matrix into an upper/lower diagonal matrix 
+	//            Also perform same operations on given (if any) adjacent matrix
+	// Complexity: O(n^3)
+	//
+
+	// Only valid for square matrix	
+	assert(this->nrows() == this->ncols() );
+	if( pmAdj != NULL ) assert(pmAdj->nrows() == this->nrows());
+	
+	const unsigned N = this->ncols();
+	T redFactor; // reduction factor to for each row/element
+		
+	// Reduction
+	if( bUpperTriangular ) { // Recuce to upper triangular matrix, i.e. lower half is zeros
+		for(int k = 0; k < N - 1; k++) {
+			for(int i = k+1; i < N; i++) {
+				assert(this->_mat[k][k] != (T)0 );
+				redFactor = this->_mat[i][k] / this->_mat[k][k];
+				// Row(i) = Row(i) - reductionFactor * Row(k)
+				// A = A.replace_row(i, A.get_row(i) - A.get_row(k) * redFactor);
+				
+				// Loop is from k+1..N as A[0..k-1] should already be zero by now!
+				this->_mat[i][k] = 0; // Our reduction factor gaurantees that "k" elemnet of "i" row would be zero after subtracting!
+				for(int j = k+1; j < N; j++) {
+					this->_mat[i][j] -= redFactor * this->_mat[k][j];
+				}
+				//mAdj(i, 0) -= redFactor * mAdj(k, 0); 
+				if( pmAdj != NULL )
+					pmAdj->_mat[i] = pmAdj->_mat[i] - pmAdj->_mat[k] * redFactor;
+			}
+		}
+	}
+	else { // Reduce to Lower Triangular Matrix; i.e. upper half is zeros
+		for(int k = N-1; k > 0; k--) {
+			for(int i = k-1; i >= 0; i--) {
+				assert(this->_mat[k][k] != (T)0 );
+				redFactor = this->_mat[i][k] / this->_mat[k][k];
+					
+				// Loop is from k..1 as A[k+1...N] should already be zero by now!
+				this->_mat[i][k] = 0; // Our reduction factor gaurantees that "k" elemnet of "i" row would be zero after subtracting!
+				for(int j = k-1; j >= 0; j--) {
+					this->_mat[i][j] -= redFactor * this->_mat[k][j];
+				}
+				//mAdj(i, 0) -= redFactor * mAdj(k, 0); 
+				if( pmAdj != NULL )
+					pmAdj->_mat[i] = pmAdj->_mat[i] - pmAdj->_mat[k] * redFactor;
+			}
+		}
+		
+	}
+		
+	return *this;	
+}
+
+// Reduce matrix to identity matrix
+// Reduces it in-place, so orginal matrix along with given adjacent matrix is directly reduced
+template <typename T>
+Matrix<T>& Matrix<T>::reduceIdentity(Matrix<T>* pmAdj) {
+	// Reduction: Reduce coeff matrix into an identity matrix 
+	//            Also perform same operations on given (if any) adjacent matrix
+	// Complexity: O(n^3)
+	//	
+	
+	//Reduce first to upper and then lower triangular to get to a diagonal matrix
+	this->reduceTriangular(pmAdj);
+	this->reduceTriangular(pmAdj, false);
+
+	// Now we convert diagonal matrix into identoy by just divding each row by diagonal value
+	for(int i=0; i < this->nrows(); i++) {
+		if( pmAdj != NULL )
+			pmAdj->_mat[i] = pmAdj->_mat[i] / this->_mat[i][i];
+		
+		this->_mat[i][i] = (T)1; // By design it will become 1 as we are dividing by same value!
+	}
+	
+	// Our originalmatrix should become an identity matrix by now!
+	assert( *this == this->identity(this->nrows()) );
+	return *this;	
+}
+
+ 
  
 // Solve linear equations using GEM (Gauss Elimination Method) 
 template <typename T>
@@ -559,6 +696,7 @@ std::vector<T> SolveLinEqGEM(const Matrix<T>& mA, const Matrix<T>& mC) {
 	// std::cout << "GEM: N: " << N << " Given coeff matrix: " << std::endl << Ag;
 	
 	// Reduction
+	/*
 	for(unsigned k = 0; k < N - 1; k++) {
 		for(unsigned i = k+1; i < N; i++) {
 			assert(Ag(k, k) != (T)0 );
@@ -574,6 +712,8 @@ std::vector<T> SolveLinEqGEM(const Matrix<T>& mA, const Matrix<T>& mC) {
 			Cg(i, 0) -= redFactor * Cg(k, 0); 
 		}
 	}
+	*/
+	Ag.reduceTriangular(&Cg);
 	// Assert: Reduced Coefficient matrix should be upper diagonal matrix now!
 	//         Therefore ALL lower diagonal elements should be zero!
 	// std::cout << "Reduced coeff matrix: " << std::endl << Ag;

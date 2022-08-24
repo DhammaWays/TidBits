@@ -618,9 +618,9 @@ void TestMatrix() {
 	//cout << m1.minor_sub(1,0) << m1.minor_sub(1,0).determinant() << endl;	
 	//cout << m1.minor_sub(1,1) << m1.minor_sub(1,1).determinant() << endl;	
 	
-	cout << "Inverse = \n" << m1.inverse() << endl;
+	cout << "Inverse = \n" << m1.inverse(true) << endl;
 	
-	cout << "M * Inv(M) = \n" << m1 * m1.inverse() << endl;
+	cout << "M * Inv(M) = \n" << m1 * m1.inverse(true) << endl;
 	
 	
 	cout << "Solving Equations: \n";
@@ -661,7 +661,7 @@ void TestMatrix() {
 	cout << m4.inverse() * m4C << endl;
 	
 	// Using GEM rule
-	cout << "Solution using gauss method: \n";
+	cout << "\nSolution using gauss method: \n";
 
 	std::vector<double> solVec = SolveLinearEquation(m4, m4C);
 	PRINT_ARRAY(solVec);
@@ -678,20 +678,61 @@ void TestMatrix() {
 	Matrix<double> m7C({50, -2, 10, 65, 80, 35, 110}, true);
 	cout << m7;
 	cout << m7C;	
-	cout << "Solution using inverse method: \n";
+	cout << "\nSolution using inverse method: \n";
 	solVec = SolveLinearEquation(m7, m7C, SolverMethod::Inverse);
 	PRINT_ARRAY(solVec)
 	cout << endl;
 	
-	cout << "Solution using cramer rule: \n";
+	cout << "\nSolution using cramer rule: \n";
 	solVec = SolveLinearEquation(m7, m7C, SolverMethod::Cramer);
 	PRINT_ARRAY(solVec)
 	cout << endl;
 	
-	cout << "Solution using GEM method: \n";
+	cout << "\nSolution using GEM method: \n";
 	solVec = SolveLinearEquation(m7, m7C, SolverMethod::Gauss);
 	PRINT_ARRAY(solVec)
-	cout << endl;		
+	cout << endl;
+	
+	cout << "\nUpper Triangular reduction: \n";
+	Matrix<double> m7U(m7);
+	Matrix<double> m7CU(m7C);
+	m7U.reduceTriangular();
+	cout << m7U;
+	cout << endl;
+			
+	cout << "\nLower Triangular reduction: \n";
+	Matrix<double> m7L(m7);
+	Matrix<double> m7CL(m7C);
+	m7L.reduceTriangular(NULL, false);
+	cout << m7L;
+	cout << endl;
+	
+	cout << "\nDeterminant: " << m7.determinant() << ", " << m7.determinant(true) << endl;
+	double detU = 1.0, detL = 1.0;
+	for(int i=0; i < m7.nrows(); i++) {
+		detU *= m7U(i,i);
+		detL *= m7L(i,i);
+	}
+	cout << "U: " << detU << "  L: " << detL << endl;
+	
+	
+	cout << "\nIdentity reduction: \n";
+	Matrix<double> m7I(m7);
+	Matrix<double> m7CI(m7.nrows());
+	m7I.reduceIdentity(&m7CI);
+	cout << m7I << endl;
+	cout << m7CI << endl;
+    cout << m7.inverse() << endl;
+	cout << m7 * m7CI << endl;
+	
+    cout << "\nInvesre via identity reduction: \n";
+	Matrix<double> m1U(m1);
+	Matrix<double> m1I(m1.nrows());
+	m1U.reduceIdentity(&m1I);
+	cout << m1U << endl;
+	cout << m1I << endl;
+	cout << m1.inverse() << endl;
+	cout << endl;
 		
 }
 

@@ -1,7 +1,7 @@
 #ifndef LS_MATRIX_H
 #define LS_MATRIX_H
 
-// Voyage down the matrix lane: Motivation was to solve few equations
+// Voyage down the matrix lane: Initial motivation was to solve few linear equations
 // Lekhraj
 
 
@@ -43,10 +43,29 @@ template <typename T=double> class Matrix {
   Matrix<T> minor() const;
   Matrix<T> cofactor() const;
   Matrix<T> adjoint() const;
-  Matrix<T> inverse() const;
-  T determinant() const;
+  // Standard Inverse method is quite expensive (n!) as it will calculat eadjoint and determinnats!
+  Matrix<T> inverse(bool bStandardWay = false) const; 
+  // Standard way of determinant is expensive: n!
+  T determinant(bool bStandardWay = false) const;
+  
+  // Reduction of matrix
+  // -Upper/Lower Triangualtion reduction along with supplied constant matrix useful
+  //  for solving equation as well as way to calculate determinante
+  // -Determinante of a triangular matrix = Products of its diagonal elements
+  Matrix<T>& reduceTriangular(Matrix<T>* pmAdj=NULL, bool bUpperTriangular=true);
+  
+  // Reduction to identity matrix
+  // -Quite useful for inverse calculation
+  // -For getting the inverse: Pass in an Identity matrix of simliar size as input
+  // -Transformed Adj matrix is your inverse!
+  // A|I => I|inverse(A)
+  Matrix<T>& reduceIdentity(Matrix<T>* pmAdj);
 
-  // Matrix/scalar operations                                                                                                                                                                                                     
+
+  // Matrix/scalar operations 
+  bool operator==(const Matrix<T>& rhs); // A == B                                                                                                                                                                                                   
+  bool operator!=(const Matrix<T>& rhs); // A != B                                                                                                                                                                                                   
+ 
   Matrix<T> operator+(const T& rhs); // C = A + k
   Matrix<T> operator-(const T& rhs); // C = A - k
   Matrix<T> operator*(const T& rhs); // C = k * A
