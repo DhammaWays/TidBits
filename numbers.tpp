@@ -48,3 +48,43 @@ Scalar rootFunction(Func&& F, Scalar a, Scalar b, const Scalar EPS, const int NI
 	
 	return c;
 }
+
+//Returns integral of a continuous function in given interval
+template <typename Func, typename Scalar>
+Scalar integrateFunction(Func&& F, Scalar a, Scalar b, const Scalar EPS, const int NITER) {
+	// Integral of F(X) in interval [a, b] = Area of F(X) in interval [a,b]
+	// We use "quadrature method" to integrate F(x) in given interval [a, b]
+	// -We divide given interval into "M" quads of base "h"
+	// -Area of each quad of base "h" and height "F(mid point of base)" is h * F(mid_point)
+	// -Now total area is just sum of these "M" quads
+	//
+	//  integral of F(x) in interval [a, b] = h * SUM(F(Xm)) for each m = 1, ..., b-a/h
+	//  M = (b-a)/h
+	//
+	// Number of iterations "M" to converge within EPS:
+	// EPS <= C * h^2, where C = ((b-a)/24) * max(F''(x)) in interval [a, b]
+	
+	
+	// Pre-conditions
+	
+	static_assert(std::is_floating_point<Scalar>::value, "Scalar must be floating point type!");
+	
+	// We want a < b
+	if( a > b ) std::swap(a, b);
+	
+	if( a == b ) // Zero Area
+		return (Scalar)0;
+		
+	Scalar h = (b - a)/NITER;
+	Scalar Xm = a + h * 0.5;
+	Scalar area = 0;
+	for(int i=0; i < NITER; i++) {
+		area += F(Xm);
+		Xm += h;
+	}
+	area *= h;
+	
+	return area;
+}
+	
+	

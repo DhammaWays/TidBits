@@ -225,6 +225,22 @@ void TestNum() {
 	cout << "\n x * e^(-x^2) has a zero at " << rootFunction(F4, -1., 1.) << endl;
 	cout << "\n (x - 0.5)^3 has a zero at " << rootFunction(F5, -1., 1.) << endl;
 	cout << "\n (x^3 - 125) has a zero at " << rootFunction(F6, 0., 10.) << endl;
+
+    const double pi = 3.14159265;
+	auto F7 = [] (const double x) { return (1000/(3 * sqrt(2 * 3.14159265))) * exp(-((x-145)*(x-145)/18)); };
+	auto F8 = [] (const double x) { return x * x; };
+	auto F9 = [] (const double x) { return sin(x) * sin(x); };
+	auto F10 = [] (const double x) { return pow(x, 4) * pow(1-x, 4) / (1 + x * x); };
+
+    // Area of normal distribution function with population of 100, STD=145, VAR=3
+	cout << "\n 1000/(3*sqrt(2*PI)) * e^(-(x-145)^2/18) area between [145, 150] is: " << integrateFunction(F7, 145., 150.) << endl;
+    // Area of simple x^2 function: x^3/3
+	cout << "\n x^2 area between [0, 3] should be x^3/3 = 9 : " << integrateFunction(F8, 0., 3.) << endl;
+	// Popular integral sin(x)^2 between [0, pi/2] should be pi/4
+	cout << "\n sin(x)^2 area between [0, pi/2] should be pi/4 : " << integrateFunction(F9, 0., pi/2) << endl;
+	// Famous integral to prove 22/7 > pi (result: 22/7 - pi)
+	cout << "\n x^4 * (1-x)^4 / (1 + x^2) area between [0, 1] should be 22/7 - pi : " << integrateFunction(F10, 0., 1.) << endl;
+
 	
 	cout << "\n Next number in series:" << endl;
 	std::vector<std::vector<int>> vecSeries = { {10, 20, 30, 40}, {2, 6, 12, 20},

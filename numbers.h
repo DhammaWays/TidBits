@@ -49,8 +49,15 @@ float kthRoot(const double n, const int k=2, const float EPS=0.001, const int NI
 float largestPolyRealRoot(const std::vector<float>& vecPolyCoef, const float EPS=0.001, const int NITER=100);
 
 //Returns a root of continuous function in given interval
+// Passing in a function: 
+// auto F = [] (const double x) { return x * exp(-x*x); };
 template <typename Func, typename Scalar>
 Scalar rootFunction(Func&& F, Scalar a, Scalar b, const Scalar EPS=0.001, const int NITER=100);
+
+//Returns integral of continuous function in given interval
+template <typename Func, typename Scalar>
+Scalar integrateFunction(Func&& F, Scalar a, Scalar b, const Scalar EPS=0.01, const int NITER=32);
+
 
 // Return the next number in given series
 int nextNumInSeries(const std::vector<int>& vecSeries);
