@@ -58,6 +58,9 @@ Scalar rootFunction(Func&& F, Scalar a, Scalar b, const Scalar EPS=0.001, const 
 template <typename Func, typename Scalar>
 Scalar integrateFunction(Func&& F, Scalar a, Scalar b, const Scalar EPS=0.01, const int NITER=32);
 
+//Returns derivative of a continuous function at given point
+template <typename Func, typename Scalar>
+Scalar derivativeFunction(Func&& F, Scalar x0, const int dervOrder=1, const Scalar h=0.025, const Scalar epsZero=1e-5);
 
 // Return the next number in given series
 int nextNumInSeries(const std::vector<int>& vecSeries);

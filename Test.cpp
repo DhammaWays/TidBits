@@ -241,6 +241,30 @@ void TestNum() {
 	// Famous integral to prove 22/7 > pi (result: 22/7 - pi)
 	cout << "\n x^4 * (1-x)^4 / (1 + x^2) area between [0, 1] should be 22/7 - pi : " << integrateFunction(F10, 0., 1.) << endl;
 
+	// Derivatives
+	cout << "\nDerivatives: " << endl;
+	cout << "\n (x^3 - 125) first derivative at x=5 is: " << derivativeFunction(F6, 5.) << endl;
+	cout << "\n (x^3 - 125) second derivative at x=5 is: " << derivativeFunction(F6, 5., 2) << endl;
+	cout << "\n (x^3 - 125) third derivative at x=5 is: " << derivativeFunction(F6, 5., 3) << endl;
+	cout << "\n (x^3 - 125) fourth derivative at x=5 is: " << derivativeFunction(F6, 5., 4) << endl;
+	cout << "\n sin(x)^2 first derivative at x=pi/4 is: " << derivativeFunction(F9, pi/4) << endl;
+	cout << "\n sin(x)^2 second derivative at x=pi/4 is: " << derivativeFunction(F9, pi/4, 2) << endl;
+	cout << "\n sin(x)^2 third derivative at x=pi/4 is: " << derivativeFunction(F9, pi/4, 3) << endl;
+	cout << "\n sin(x)^2 fourth derivative at x=pi/4 is: " << derivativeFunction(F9, pi/4, 4) << endl;
+	cout << "\n sin(x)^2 fifth derivative at x=pi/4 is: " << derivativeFunction(F9, pi/4, 5) << endl;
+	cout << "\n 1000/(3*sqrt(2*PI)) * e^(-(x-145)^2/18) first derivative at 145 should be zero: " <<
+		derivativeFunction(F7, 145.) << endl;
+	cout << "\n 1000/(3*sqrt(2*PI)) * e^(-(x-145)^2/18) second derivative at 145 should be negative as this function has global maximum at 145: " <<
+		derivativeFunction(F7, 145., 2) << endl;
+	cout << "\n 1000/(3*sqrt(2*PI)) * e^(-(x-145)^2/18) first derivative at 142 should be maximum: " <<
+		derivativeFunction(F7, 142.) << endl;
+	cout << "\n 1000/(3*sqrt(2*PI)) * e^(-(x-145)^2/18) first derivative at 148 should be minimum: " <<
+		derivativeFunction(F7, 148.) << endl;
+	cout << "\n 1000/(3*sqrt(2*PI)) * e^(-(x-145)^2/18) second derivative at 142 should be negative: " <<
+		derivativeFunction(F7, 142., 2) << endl;
+	cout << "\n 1000/(3*sqrt(2*PI)) * e^(-(x-145)^2/18) second derivative at 148 should be positive: " <<
+		derivativeFunction(F7, 148.01, 2) << endl;
+
 	
 	cout << "\n Next number in series:" << endl;
 	std::vector<std::vector<int>> vecSeries = { {10, 20, 30, 40}, {2, 6, 12, 20},

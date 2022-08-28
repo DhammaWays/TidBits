@@ -87,4 +87,38 @@ Scalar integrateFunction(Func&& F, Scalar a, Scalar b, const Scalar EPS, const i
 	return area;
 }
 	
+//Returns derivative of a continuous function at given point
+template <typename Func, typename Scalar>
+Scalar derivativeFunction(Func&& F, Scalar x0, const int dervOrder, const Scalar h, const Scalar epsZero) {
+	// Using center difference method for differentiation
+	// x0+h...x0...x-h
+	// dy = f(x0+h) - f(x0-h), dx = (x+h)-(x0-h) = 2h
+	// f'(x0) = dy/dx = f(x0 + h) - f(x0 - h) / 2h
+	//
+	// Extending it to higher order:
+	// fn(x0) = fn-1(x0+h) - fn-1(x-h) / 2h
+	// -where fn is nth order derivative expressed in terms of (n-1)th order derivative
+	//
+	
+	// Pre-conditions
+	
+	static_assert(std::is_floating_point<Scalar>::value, "Scalar must be floating point type!");
+	
+	Scalar d = 0;
+	if( dervOrder <= 1 ) {
+		d = (F(x0 + h) - F(x0 - h)) / (2 * h);
+		return (ABS(d) <= epsZero ? 0 : d);
+	}
+	
+	for(int i=2; i <= dervOrder; i++) {
+		d = (derivativeFunction(F, x0 + h, i-1, h, epsZero) - derivativeFunction(F, x0 - h, i-1, h, epsZero)) / (2 * h);
+		// We could have short circuited the loop here if current derivative is zero
+		// but it will not work for oscilating functions (e.g. trignometric) where
+		// we can not assume that next derivative onwards will become zero if current
+		// derivative is zero (e.g. what happens in polynomial functions).
+	}	
+			
+	return (ABS(d) <= epsZero ? 0 : d);
+}
+	
 	
